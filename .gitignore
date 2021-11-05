@@ -1,0 +1,6 @@
+# dirs
+.vscode/
+build/
+
+# from debug
+Task1
