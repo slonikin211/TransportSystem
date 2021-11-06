@@ -1,7 +1,12 @@
-#include <iostream>
+#define TESTS
+
+#include "tests.h"
 
 int main()
 {
-    std::cout << "Hello, world" << std::endl;
+#ifdef TESTS
+    Test::TestTransportSystem();
+#endif
+
     return 0;
 }
