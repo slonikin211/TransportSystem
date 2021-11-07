@@ -3,7 +3,6 @@
 #include <string>
 #include <string_view>
 #include <unordered_set>
-#include <algorithm>
 #include <deque>
 
 #include "geo.h"
@@ -20,7 +19,17 @@ struct Stop
 struct Bus
 {
     std::string name;
-    std::unordered_set<const Stop*> route;
+    std::deque<const Stop*> route;
+    bool cyclic_route;
+};
+
+
+// Bus info for output
+struct BusInfo
+{
+    size_t amount_of_stops;
+    size_t amount_of_unique_stops;
+    double route_length;
 };
 
 
@@ -41,6 +50,7 @@ public:
     const Bus* FindRouteByBusName(std::string_view name) const;
     const Stop* FindStopByName(std::string_view name) const;
 
+    BusInfo GetBusInfoByBus(const Bus* bus) const;
 private:
     std::unordered_set<Bus*> all_busses_ptrs_;
     std::deque<Bus> all_busses_;
@@ -48,3 +58,16 @@ private:
     std::unordered_set<Stop*> all_stops_ptrs_;
     std::deque<Stop> all_stops_;
 };
+
+
+
+// Help functionality (TODO: make another file for this)
+
+// trim from start (in place)
+void ltrim(std::string_view &s);
+
+// trim from end (in place)
+void rtrim(std::string_view &s);
+
+// trim from both ends (in place)
+void trim(std::string_view &s);

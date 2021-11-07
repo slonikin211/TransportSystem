@@ -10,13 +10,19 @@ Stop GetInitStopFromQuery(std::string_view str)
     size_t start_position = 5u; // Stop => 4 letters
     std::string_view stop_name = str.substr(start_position, str.find(":") - start_position);
 
+
     // Coord Latitude
-    start_position += stop_name.size() + 2u;    // includes ": "
+    start_position += stop_name.size() + 1u;    // includes ":"
     std::string_view coordLat = str.substr(start_position, str.find(",", start_position) - start_position);
 
     // Coord Longtitude
-    start_position += coordLat.size() + 2u;     // includes ", "
+    start_position += coordLat.size() + 1u;     // includes ","
     std::string_view coordLng = str.substr(start_position, str.size() - start_position);
+
+    // Remove spaces
+    trim(stop_name);
+    trim(coordLat);
+    trim(coordLng);
 
     Stop stop = {
         std::string(stop_name), 
@@ -26,8 +32,15 @@ Stop GetInitStopFromQuery(std::string_view str)
     return stop;
 }
 
-std::unordered_set<std::string> ParseRouteFromQuery(std::string_view str)
+bool CheckCycleRoute(std::string_view str)
+{   
+    // if true => delimiter is '>' => cyclic route
+    return (str.find(">") != std::string_view::npos);
+}
+
+std::deque<std::string> ParseRouteFromQuery(std::string_view str)
 {
+    using namespace std::string_view_literals;
     // Fromat 1:
     // stop1 - stop2 - ... stopN
     // Format 2:
@@ -35,7 +48,7 @@ std::unordered_set<std::string> ParseRouteFromQuery(std::string_view str)
     // Hint:
     // Format1 => stop1 > stop2 > ... > stopN-1 > stopN > stopN-1 > ... > stop2 > stop1
 
-    std::unordered_set<std::string> result;
+    std::deque<std::string> result;
 
     // Define type of route (> or -)
     char delimiter = '>';
@@ -44,13 +57,7 @@ std::unordered_set<std::string> ParseRouteFromQuery(std::string_view str)
         delimiter = '-';
     }
 
-    // Lambda for remove spaces from beginning and end of string_view from queries
-    auto simple_space_remover = [](std::string_view& sv) {
-        if (sv.front() == ' ') { sv.remove_prefix(1u); }
-        if (sv.back() == ' ') { sv.remove_suffix(1u); }
-    };
-
-    while (str.size() != std::string::npos - 1u)    // while string is not empty
+    while (str != ""sv)    // while str is not empty
     {
         std::string_view current_stop;
         const auto to_position = str.find(delimiter);
@@ -58,16 +65,20 @@ std::unordered_set<std::string> ParseRouteFromQuery(std::string_view str)
         current_stop = (to_position != std::string_view::npos) ? (str.substr(0, to_position)) : (str);
 
         // for next iteration
-        str.remove_prefix(current_stop.size() + 2u);    // "> " includes    
+        str.remove_prefix(current_stop.size());    // "> " includes    
+        if (str.front() == delimiter)
+        {
+            str.remove_prefix(1u);  // delete delimeter
+        }
 
         // save data
-        simple_space_remover(current_stop);
-        result.insert(std::string(current_stop));
+        trim(current_stop);
+        result.push_back(std::string(current_stop));
     }
     return result;
 }
 
-Bus GetInitBusFromQuery(TransportSystem& t_system, std::string_view str)
+Bus InitBusFromQuery(TransportSystem& t_system, std::string_view str)
 {
     // Format 1:
     // Bus X: stop1 - stop2 - ... stopN
@@ -82,43 +93,47 @@ Bus GetInitBusFromQuery(TransportSystem& t_system, std::string_view str)
 
 
     // Route
-    start_position += bus_name.size() + 2u;     // includes ": "
+    start_position += bus_name.size() + 1u;     // includes ":"
     std::string_view route = str.substr(start_position, str.size() - start_position);
 
-    // Parse route string into set
-    std::unordered_set<std::string> route_set = ParseRouteFromQuery(route);
+    // Parse route string into deque
+    std::deque<std::string> route_set = ParseRouteFromQuery(route);
+    trim(bus_name);
 
     // Convert string set to Stops*
-    std::unordered_set<const Stop*> stops_of_route;
+    std::deque<const Stop*> stops_of_route;
     for (const auto& stop_str: route_set)
     {
         const Stop* stop = t_system.FindStopByName(stop_str);
         if (stop != nullptr) 
         {
-            stops_of_route.insert(stop);
+            stops_of_route.push_back(stop);
         }
     }
     
     // Init bus object
-    Bus bus = { std::string(bus_name), stops_of_route };
-
+    Bus bus = { 
+        std::string(bus_name),
+        stops_of_route,
+        CheckCycleRoute(route)
+    };
     return bus;
 }
 
-void ProcessInitQueries(TransportSystem& t_system, const std::unordered_set<std::string>& queries)
+void ProcessInitQueries(TransportSystem& t_system, const std::deque<std::string>& queries)
 {
     // First of all we need to init stops, then routes (buses)
-    std::unordered_set<std::string_view> stop_queries, bus_queries;
+    std::deque<std::string_view> stop_queries, bus_queries;
 
     for (const auto& str : queries)
     {
         if (str.at(0) == 'B')   // Bus
         {
-            bus_queries.insert(str);
+            bus_queries.push_back(str);
         }
         else if (str.at(0) == 'S')  // Stop
         {
-            stop_queries.insert(str);
+            stop_queries.push_back(str);
         }
     }
 
@@ -132,23 +147,26 @@ void ProcessInitQueries(TransportSystem& t_system, const std::unordered_set<std:
     // Process Bus queries
     for (const auto& query: bus_queries)
     {
-        Bus bus = GetInitBusFromQuery(t_system, query);
+        Bus bus = InitBusFromQuery(t_system, query);
         t_system.AddRoute(bus);
     }
 }
 
 void InputRead(TransportSystem& t_system)
 {
-    std::unordered_set<std::string> init_queries;
+    std::deque<std::string> init_queries;
 
     size_t n;
     std::cin >> n;
 
-    for (size_t i = 0; i < n; ++i)
+    for (size_t i = 0; i <= n; ++i)
     {
         std::string str;
         std::getline(std::cin, str);
-        init_queries.insert(str);
+        if (!str.empty())
+        {
+            init_queries.push_back(str);
+        }
     }
 
     ProcessInitQueries(t_system, init_queries);
