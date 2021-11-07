@@ -23,7 +23,7 @@ BusInfo GetBusInfo(TransportSystem& t_system, std::string_view name)
     {
         return {};
     }
-    
+
     // Find amount of stops
     size_t amount_of_stops = (!bus->cyclic_route) ? (bus->route.size() * 2u - 1u)
         : (bus->route.size() + (((*bus).route.front() == (*bus).route.back()) ? (0u) : (1u)));  // Need to check: s1 > s2 == s1 > s2 > s1
@@ -31,12 +31,7 @@ BusInfo GetBusInfo(TransportSystem& t_system, std::string_view name)
     // Count unique stops
     size_t amount_of_unique_stops;
 
-    if (!bus->cyclic_route)
-    {
-        amount_of_unique_stops = bus->route.size();
-    }
-    else
-    {
+    
         std::unordered_set<const Stop*> unique_stops, not_unique_stops;
         for (const auto stop: bus->route)
         {
@@ -44,14 +39,13 @@ BusInfo GetBusInfo(TransportSystem& t_system, std::string_view name)
             {
                 unique_stops.insert(stop);
             }
-            else if (unique_stops.count(stop))
+            else if (not_unique_stops.count(stop))
             {
-                unique_stops.erase(stop);
                 not_unique_stops.insert(stop);
             }
         }
-        amount_of_unique_stops = unique_stops.size() + (((*bus).route.front() == (*bus).route.back()) ? (1u) : (0u));
-    }
+        amount_of_unique_stops = unique_stops.size();
+    
 
     // Compute route length
     double route_length = 0.0;
