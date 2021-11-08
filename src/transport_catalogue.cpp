@@ -9,9 +9,16 @@
 
 void TransportSystem::AddRoute(const Bus& bus)
 {
+    // Init bus
     all_busses_.push_back(std::move(bus));
     Bus* bus_ptr = &all_busses_.back();
     all_busses_ptrs_.insert(bus_ptr);
+
+    // Link bus to stops
+    for (auto stop: bus_ptr->route)
+    {
+        all_stops_info_[stop].buses.insert(bus_ptr);
+    }
 }
 
 void TransportSystem::AddStop(const Stop& stop)
@@ -114,6 +121,14 @@ BusInfo TransportSystem::GetBusInfoByBus(const Bus* bus) const
     return {amount_of_stops, amount_of_unique_stops, route_length};
 }
 
+StopInfo TransportSystem::GetStopInfoByStop(const Stop* stop) const
+{
+    if (stop == nullptr || !all_stops_info_.count(stop))
+    {
+        return {};
+    }
+    return all_stops_info_.at(stop);
+}
 
 // Help functionality (TODO: make another file for this)
 

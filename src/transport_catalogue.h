@@ -3,7 +3,9 @@
 #include <string>
 #include <string_view>
 #include <unordered_set>
+#include <unordered_map>
 #include <deque>
+#include <set>
 
 #include "geo.h"
 
@@ -13,7 +15,6 @@ struct Stop
     std::string name;
     Coordinates coordinates;
 };
-
 
 // Bus structure include bus name and route
 struct Bus
@@ -31,6 +32,14 @@ struct BusInfo
     size_t amount_of_unique_stops;
     double route_length;
 };
+
+
+// Stop info for output
+struct StopInfo
+{
+    std::set<const Bus*> buses;
+};
+
 
 
 // Transport system class which includes next functionality
@@ -51,12 +60,14 @@ public:
     const Stop* FindStopByName(std::string_view name) const;
 
     BusInfo GetBusInfoByBus(const Bus* bus) const;
+    StopInfo GetStopInfoByStop(const Stop* stop) const;
 private:
     std::unordered_set<Bus*> all_busses_ptrs_;
     std::deque<Bus> all_busses_;
 
     std::unordered_set<Stop*> all_stops_ptrs_;
     std::deque<Stop> all_stops_;
+    std::unordered_map<const Stop* ,StopInfo> all_stops_info_;
 };
 
 

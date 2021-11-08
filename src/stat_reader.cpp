@@ -8,6 +8,14 @@
 #include <deque>
 #include <sstream>
 
+std::string GetNameFromStopInfoQuery(std::string_view str)
+{
+    // Stop => 4 letters + space => start position = 5
+    std::string_view to_return = str.substr(5u, str.find(":") - 5u);
+    trim(to_return);
+    return std::string(to_return);
+}
+
 std::string GetNameFromBusInfoQuery(std::string_view str)
 {
     // Bus => 3 letters + space => start position = 4
@@ -19,35 +27,73 @@ std::string GetNameFromBusInfoQuery(std::string_view str)
 std::string ProcessDBQueries(TransportSystem& t_system, const std::deque<std::string>& queries)
 {
     using namespace std::string_literals;
-    std::deque<std::string_view> bus_info_queries;
+    std::deque<std::string_view> all_queries;
 
     for (const auto& str: queries)
     {
-        if (str.at(0) == 'B')   // Bus
-        {
-            bus_info_queries.push_back(str);
-        }
+        all_queries.push_back(str);
     }
 
-    // Process Bus Info queries
+    // Process queries
     std::stringstream ss;
-    for (const auto& query: bus_info_queries)
+    for (const auto& query: all_queries)
     {
-        std::string bus_name = GetNameFromBusInfoQuery(query);
-        BusInfo info = t_system.GetBusInfoByBus(t_system.FindRouteByBusName(bus_name));
+        if (query.at(0) == 'B')     // Bus
+        {
+            std::string bus_name = GetNameFromBusInfoQuery(query);
+            BusInfo info = t_system.GetBusInfoByBus(t_system.FindRouteByBusName(bus_name));
 
-        if (info.amount_of_stops != 0u)
-        {
-            ss << "Bus " << bus_name << ": " << 
-                info.amount_of_stops << " stops on route, " <<
-                info.amount_of_unique_stops << " unique stops, " <<
-                info.route_length << " route length" << std::endl;
+            if (info.amount_of_stops != 0u)
+            {
+                ss << "Bus " << bus_name << ": " << 
+                    info.amount_of_stops << " stops on route, " <<
+                    info.amount_of_unique_stops << " unique stops, " <<
+                    info.route_length << " route length" << std::endl;
+            }
+            else
+            {
+                ss << "Bus " << bus_name << ": not found" << std::endl;
+            }
         }
-        else
+        else if (query.at(0) == 'S')    // Stop
         {
-            ss << "Bus " << bus_name << ": not found" << std::endl;
+            std::string stop_name = GetNameFromStopInfoQuery(query);
+            const Stop* stop = t_system.FindStopByName(stop_name);
+
+            if (stop == nullptr)
+            {
+                ss << "Stop " << stop_name << ": not found" << std::endl;
+            }
+            else
+            {
+                StopInfo info = t_system.GetStopInfoByStop(stop);
+                if (info.buses.empty())
+                {
+                    ss << "Stop " << stop_name << ": no buses" << std::endl;
+                }
+                else
+                {
+                    ss << "Stop " << stop_name << ": buses ";
+
+                    // Sort by name
+                    std::set<std::string_view> sorted;
+                    for (const auto& bus: info.buses)
+                    {
+                        sorted.insert(bus->name);
+                    }
+
+                    // Out
+                    for (const auto& bus: sorted)
+                    {
+                        ss << bus << " ";
+                    }
+                    ss.seekp(-1, std::ios_base::end);   // remove last space
+                    ss << std::endl;
+                }
+            }
         }
     }
+
     return ss.str();
 }
 
@@ -68,5 +114,5 @@ void InputReadDBQueries(TransportSystem& t_system)
         }
     }
 
-    std::cout << ProcessDBQueries(t_system, init_queries) << std::endl;
+    std::cout << ProcessDBQueries(t_system, init_queries);
 }
