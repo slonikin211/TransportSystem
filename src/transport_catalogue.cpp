@@ -48,12 +48,70 @@ const Stop* TransportSystem::FindStopByName(std::string_view name) const
 
 BusInfo TransportSystem::GetBusInfoByBus(const Bus* bus) const
 {   
-    // TODO: I don't remember why
-    assert(bus != nullptr);
+    if (bus == nullptr)     // not found
+    {
+        return {};
+    }
+    // Find amount of stops
+    size_t amount_of_stops = (!bus->cyclic_route) ? (bus->route.size() * 2u - 1u)
+        : (bus->route.size() + (((*bus).route.front() == (*bus).route.back()) ? (0u) : (1u)));  // Need to check: s1 > s2 == s1 > s2 > s1
 
-    BusInfo info;
+    // Count unique stops
+    size_t amount_of_unique_stops;
 
-    return info;
+    std::unordered_set<const Stop*> unique_stops, not_unique_stops;
+    for (const auto stop: bus->route)
+    {
+        if (!unique_stops.count(stop) && !not_unique_stops.count(stop))
+        {
+            unique_stops.insert(stop);
+        }
+        else if (not_unique_stops.count(stop))
+        {
+            not_unique_stops.insert(stop);
+        }
+    }
+    amount_of_unique_stops = unique_stops.size();
+    
+    // Compute route length
+    double route_length = 0.0;
+    Coordinates previous = {0.0, 0.0};
+    bool first_stop = true;
+    for (auto it = bus->route.begin(); it  != bus->route.end(); ++it)
+    {
+        if (!first_stop)    // avoiding first stop
+        {
+            route_length += ComputeDistance(previous, (*it)->coordinates);
+        }
+        previous = (*it)->coordinates;
+        first_stop = false;
+    }
+
+    // Just go back if format is Bus X: A1 - A2 - ... - AN
+    if (!bus->cyclic_route)
+    {
+        std::deque<const Stop*> route_back = {bus->route.begin(), bus->route.end()};
+        first_stop = true;
+        previous = {0.0, 0.0};
+        for (auto it = route_back.rbegin(); it != route_back.rend(); ++it)
+        {
+            if (!first_stop)    // avoiding first stop
+            {
+                route_length += ComputeDistance(previous, (*it)->coordinates);
+            }
+            previous = (*it)->coordinates;
+            first_stop = false;
+        }
+    }
+    else
+    {
+        // To the first (Format Bus X: A1 > A2 > ... AN => AN > A1)
+        // If AM > AM where M = [1, N] => ComputeDistance returns 0.0
+        route_length += ComputeDistance(previous, (*(bus->route.begin()))->coordinates);
+    }
+
+    // Return info
+    return {amount_of_stops, amount_of_unique_stops, route_length};
 }
 
 

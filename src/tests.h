@@ -117,19 +117,19 @@ namespace Test
             ts.AddRoute(InitBusFromQuery(ts, to_parse3));
             ts.AddRoute(InitBusFromQuery(ts, to_parse4));
 
-            BusInfo info1 = GetBusInfo(ts, "256"sv);
+            BusInfo info1 = ts.GetBusInfoByBus(ts.FindRouteByBusName("256"sv));
             assert(info1.amount_of_stops == 6u); 
             assert(info1.amount_of_unique_stops == 5u);           
             
-            BusInfo info2 = GetBusInfo(ts, "750"sv);
+            BusInfo info2 = ts.GetBusInfoByBus(ts.FindRouteByBusName("750"sv));
             assert(info2.amount_of_stops == 5u); 
             assert(info2.amount_of_unique_stops == 3u);        
             
-            BusInfo info3= GetBusInfo(ts, "777"sv);
+            BusInfo info3= ts.GetBusInfoByBus(ts.FindRouteByBusName("777"sv));
             assert(info3.amount_of_stops == 6u); 
             assert(info3.amount_of_unique_stops == 5u);   
             
-            BusInfo info4 = GetBusInfo(ts, "751"sv);
+            BusInfo info4 = ts.GetBusInfoByBus(ts.FindRouteByBusName("751"sv));
             assert(info4.amount_of_stops == 7u); 
             assert(info4.amount_of_unique_stops == 3u);  
         }
@@ -240,7 +240,7 @@ namespace Test
                 assert(ts.FindRouteByBusName("X"s)->name == "X"s);    
                 assert(ts.FindRouteByBusName("X"s)->cyclic_route == true);
 
-                auto info = GetBusInfo(ts, "X");
+                auto info = ts.GetBusInfoByBus(ts.FindRouteByBusName("X"sv));
                 assert(info.amount_of_stops == 7u);
                 assert(info.amount_of_unique_stops == 5u);   
             }
@@ -249,7 +249,7 @@ namespace Test
                 assert(ts.FindRouteByBusName("Y"s)->name == "Y"s);    
                 assert(ts.FindRouteByBusName("Y"s)->cyclic_route == false);
 
-                auto info = GetBusInfo(ts, "Y");
+                auto info = ts.GetBusInfoByBus(ts.FindRouteByBusName("Y"sv));
                 assert(info.amount_of_stops == 11u);
                 assert(info.amount_of_unique_stops == 5u);   
             }
@@ -258,7 +258,7 @@ namespace Test
                 assert(ts.FindRouteByBusName("Z"s)->name == "Z"s);    
                 assert(ts.FindRouteByBusName("Z"s)->cyclic_route == false);
 
-                auto info = GetBusInfo(ts, "Z");
+                auto info = ts.GetBusInfoByBus(ts.FindRouteByBusName("Z"sv));
                 assert(info.amount_of_stops == 13u);
                 assert(info.amount_of_unique_stops == 5u);   
             }
