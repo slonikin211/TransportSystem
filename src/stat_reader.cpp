@@ -36,6 +36,7 @@ std::string ProcessDBQueries(TransportSystem& t_system, const std::deque<std::st
 
     // Process queries
     std::stringstream ss;
+    size_t i = 0u;
     for (const auto& query: all_queries)
     {
         if (query.at(0) == 'B')     // Bus
@@ -48,11 +49,12 @@ std::string ProcessDBQueries(TransportSystem& t_system, const std::deque<std::st
                 ss << "Bus " << bus_name << ": " << 
                     info.amount_of_stops << " stops on route, " <<
                     info.amount_of_unique_stops << " unique stops, " <<
-                    info.route_length << " route length" << std::endl;
+                    info.route_length << " route length, " << 
+                    info.curvature << " curvature";
             }
             else
             {
-                ss << "Bus " << bus_name << ": not found" << std::endl;
+                ss << "Bus " << bus_name << ": not found";
             }
         }
         else if (query.at(0) == 'S')    // Stop
@@ -62,14 +64,14 @@ std::string ProcessDBQueries(TransportSystem& t_system, const std::deque<std::st
 
             if (stop == nullptr)
             {
-                ss << "Stop " << stop_name << ": not found" << std::endl;
+                ss << "Stop " << stop_name << ": not found";
             }
             else
             {
                 StopInfo info = t_system.GetStopInfoByStop(stop);
                 if (info.buses.empty())
                 {
-                    ss << "Stop " << stop_name << ": no buses" << std::endl;
+                    ss << "Stop " << stop_name << ": no buses";
                 }
                 else
                 {
@@ -87,13 +89,16 @@ std::string ProcessDBQueries(TransportSystem& t_system, const std::deque<std::st
                     {
                         ss << bus << " ";
                     }
-                    ss.seekp(-1, std::ios_base::end);   // remove last space
-                    ss << std::endl;
+                    ss.seekp(-1, ss.cur);    // remove space
                 }
             }
         }
+    
+        if (i++ < all_queries.size() - 1u)
+        {
+            ss << std::endl;
+        }
     }
-
     return ss.str();
 }
 

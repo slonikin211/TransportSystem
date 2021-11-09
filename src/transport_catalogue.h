@@ -31,6 +31,7 @@ struct BusInfo
     size_t amount_of_stops;
     size_t amount_of_unique_stops;
     double route_length;
+    double curvature;
 };
 
 
@@ -38,6 +39,30 @@ struct BusInfo
 struct StopInfo
 {
     std::set<const Bus*> buses;
+};
+
+
+// Connection between 2 stops includes route length and curvatur between them
+struct Connection
+{
+    const Stop* stop1;
+    const Stop* stop2;
+    double route_length;
+};
+
+// Hasher for connection
+class ConnectionHasher
+{
+public:
+    size_t operator()(Connection* conn) const
+    {
+        return (
+            static_cast<size_t>(c_hasher_(&conn->stop1)) +
+            static_cast<size_t>(c_hasher_(&conn->stop1)  * 37u)
+        );
+    }
+private:
+    std::hash<void*> c_hasher_;
 };
 
 
@@ -54,20 +79,29 @@ class TransportSystem
 public:
     void AddRoute(const Bus& bus);
     void AddStop(const Stop& stop);
-
+    void AddLinkStops(const Connection& connection);
 
     const Bus* FindRouteByBusName(std::string_view name) const;
     const Stop* FindStopByName(std::string_view name) const;
+    const Connection* FindConnectionByStops(const Stop* stop1, const Stop* stop2) const;
 
     BusInfo GetBusInfoByBus(const Bus* bus) const;
     StopInfo GetStopInfoByStop(const Stop* stop) const;
+
+private:
+    double ComputeGeoRoute(const Bus* bus) const;
+    double ComputeRealRoute(const Bus* bus) const;
+
 private:
     std::unordered_set<Bus*> all_busses_ptrs_;
     std::deque<Bus> all_busses_;
 
     std::unordered_set<Stop*> all_stops_ptrs_;
     std::deque<Stop> all_stops_;
-    std::unordered_map<const Stop* ,StopInfo> all_stops_info_;
+    std::unordered_map<const Stop*, StopInfo> all_stops_info_;
+
+    std::unordered_set<Connection*, ConnectionHasher> all_stops_connections_ptrs_;
+    std::deque<Connection> all_stops_connections_;
 };
 
 

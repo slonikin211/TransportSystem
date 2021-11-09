@@ -15,9 +15,19 @@ Stop GetInitStopFromQuery(std::string_view str)
     start_position += stop_name.size() + 1u;    // includes ":"
     std::string_view coordLat = str.substr(start_position, str.find(",", start_position) - start_position);
 
-    // Coord Longtitude
+    // If default stop query (exludes additional linked stop information)
+    std::string_view coordLng;
     start_position += coordLat.size() + 1u;     // includes ","
-    std::string_view coordLng = str.substr(start_position, str.size() - start_position);
+    if (str.find(",", start_position) == str.npos)
+    {
+        // Coord Longtitude without additional stops
+        coordLng = str.substr(start_position, str.size() - start_position);
+    }
+    else
+    {
+        coordLng = str.substr(start_position, str.find(",", start_position) - start_position);
+    }
+
 
     // Remove spaces
     trim(stop_name);
@@ -30,6 +40,108 @@ Stop GetInitStopFromQuery(std::string_view str)
     };
 
     return stop;
+}
+
+std::deque<std::string> ParseStopsFromQuery(std::string_view str)
+{
+    using namespace std::string_view_literals;
+    std::deque<std::string> result;
+
+    char delimiter = ',';
+
+    while (str != ""sv)    // while str is not empty
+    {
+        std::string_view current_stop;
+        const auto to_position = str.find(delimiter);
+
+        current_stop = (to_position != std::string_view::npos) ? (str.substr(0, to_position)) : (str);
+
+        // for next iteration
+        str.remove_prefix(current_stop.size());    // ", " includes    
+        if (str.front() == delimiter)
+        {
+            str.remove_prefix(1u);  // delete delimeter
+        }
+
+        // save data
+        trim(current_stop);
+        result.push_back(std::string(current_stop));
+    }
+    return result;
+}
+
+void SetStopsConnectionsFromQuery(TransportSystem& system, std::string_view str)
+{
+    // Format
+    // Stop X: coordLat, coordLng, D1m to  stop1, D2m to stop2 and etc.
+    
+    // Stop name
+    size_t start_position = 5u; // Stop => 4 letters
+    std::string_view stop_name = str.substr(start_position, str.find(":") - start_position);
+
+    // Coord Latitude
+    start_position += stop_name.size() + 1u;    // includes ":"
+    std::string_view coordLat = str.substr(start_position, str.find(",", start_position) - start_position);
+
+    // If default stop query (exludes additional linked stop information)
+    std::string_view coordLng;
+    start_position += coordLat.size() + 1u;     // includes ","
+    if (str.find(",", start_position) == str.npos)
+    {
+        // Coord Longtitude without additional stops
+        coordLng = str.substr(start_position, str.size() - start_position);
+        return;
+    }
+
+    coordLng = str.substr(start_position, str.find(",", start_position) - start_position);
+    start_position += coordLng.size() + 1u;     // includes ","
+
+    // Get all stops info and link it
+    trim(stop_name);
+    const Stop* stop1 = system.FindStopByName(stop_name);
+
+    // Get all stops info
+    std::string_view additional_stops = str.substr(start_position, str.size() - start_position);
+    trim(additional_stops);
+    std::deque<std::string> stop_to_link_info = ParseStopsFromQuery(additional_stops);
+
+    // Link
+    for (const auto& current_stop: stop_to_link_info)
+    {
+        // Prepare data
+        size_t current_position = 0u;
+
+        // Route length
+        std::string_view current_stop_route_length = current_stop.substr(current_position, current_stop.find(" "));
+        current_stop_route_length.remove_suffix(1u);    // remove suffix 'm'
+
+        // Stop name
+        current_position += current_stop_route_length.size() + 4u; // "220m to Stop" => "m to " skip
+        // using string because of incorrect working of saving data to string_view (stop_name with spaces incorrect)
+        std::string current_stop_name_s = std::string(current_stop.substr(current_position, current_stop.size() - current_position));
+        std::string_view current_stop_name = current_stop_name_s;
+
+        // Final prepare
+        trim(current_stop_name);
+        const Stop* stop2 = system.FindStopByName(current_stop_name);
+        if (stop2 == nullptr)
+        {
+            continue;
+        }
+
+
+        double route_length = std::stod(std::string(current_stop_route_length));
+
+        // Connect!
+        Connection to_add = 
+        {
+            stop1, 
+            stop2,
+            route_length
+        };
+
+        system.AddLinkStops(to_add);
+    }
 }
 
 bool CheckCycleRoute(std::string_view str)
@@ -137,11 +249,17 @@ void ProcessInitQueries(TransportSystem& t_system, const std::deque<std::string>
         }
     }
 
-    // Process Stop queries
+    // Process init Stop queries
     for (const auto& query: stop_queries)
     {
         Stop stop = GetInitStopFromQuery(query);
         t_system.AddStop(stop);
+    }
+
+    // Process Link Stops queries
+    for (const auto& query: stop_queries)
+    {
+        SetStopsConnectionsFromQuery(t_system, query);
     }
 
     // Process Bus queries

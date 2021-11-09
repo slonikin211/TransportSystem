@@ -9,10 +9,16 @@
 // Parse string into Stop
 Stop GetInitStopFromQuery(std::string_view str);
 
+// Parse stops into std::deque<std::string> 
+std::deque<std::string> ParseStopsFromQuery(std::string_view str);
+
+// Parse string of stops into std::deque<Connection> and add it to TransportSystem
+void SetStopsConnectionsFromQuery(TransportSystem& system, std::string_view str);
+
 // Check for cyclic route
 bool CheckCycleRoute(std::string_view str);
 
-// Parse route into std::unordered_set<Stop*> 
+// Parse route into std::deque<std::string> 
 std::deque<std::string> ParseRouteFromQuery(std::string_view str);
 
 // Parse string into Bus

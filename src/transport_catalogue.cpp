@@ -28,6 +28,13 @@ void TransportSystem::AddStop(const Stop& stop)
     all_stops_ptrs_.insert(stop_ptr);
 }
 
+void TransportSystem::AddLinkStops(const Connection& connection)
+{
+    // Add link
+    all_stops_connections_.push_back(std::move(connection));
+    Connection* conn_ptr = &all_stops_connections_.back();
+    all_stops_connections_ptrs_.insert(conn_ptr);
+}
 
 
 const Bus* TransportSystem::FindRouteByBusName(std::string_view name) const
@@ -52,35 +59,21 @@ const Stop* TransportSystem::FindStopByName(std::string_view name) const
     return (to_find != all_stops_.end()) ? (&(*to_find)) : (nullptr);
 }
 
-
-BusInfo TransportSystem::GetBusInfoByBus(const Bus* bus) const
-{   
-    if (bus == nullptr)     // not found
+const Connection* TransportSystem::FindConnectionByStops(const Stop* stop1, const Stop* stop2) const
+{
+    for (const auto& conn: all_stops_connections_)
     {
-        return {};
-    }
-    // Find amount of stops
-    size_t amount_of_stops = (!bus->cyclic_route) ? (bus->route.size() * 2u - 1u)
-        : (bus->route.size() + (((*bus).route.front() == (*bus).route.back()) ? (0u) : (1u)));  // Need to check: s1 > s2 == s1 > s2 > s1
-
-    // Count unique stops
-    size_t amount_of_unique_stops;
-
-    std::unordered_set<const Stop*> unique_stops, not_unique_stops;
-    for (const auto stop: bus->route)
-    {
-        if (!unique_stops.count(stop) && !not_unique_stops.count(stop))
+        if (stop1 == conn.stop1 && stop2 == conn.stop2)
         {
-            unique_stops.insert(stop);
-        }
-        else if (not_unique_stops.count(stop))
-        {
-            not_unique_stops.insert(stop);
+            return &conn;
         }
     }
-    amount_of_unique_stops = unique_stops.size();
-    
-    // Compute route length
+    return nullptr;    // not found
+}
+
+
+double TransportSystem::ComputeGeoRoute(const Bus* bus) const
+{
     double route_length = 0.0;
     Coordinates previous = {0.0, 0.0};
     bool first_stop = true;
@@ -116,9 +109,119 @@ BusInfo TransportSystem::GetBusInfoByBus(const Bus* bus) const
         // If AM > AM where M = [1, N] => ComputeDistance returns 0.0
         route_length += ComputeDistance(previous, (*(bus->route.begin()))->coordinates);
     }
+    return route_length;
+}
 
+double TransportSystem::ComputeRealRoute(const Bus* bus) const
+{
+    double route_length = 0;
+    const Stop* previous = nullptr;
+    bool first_stop = true;
+    for (auto it = bus->route.begin(); it  != bus->route.end(); ++it)
+    {
+        if (!first_stop)    // avoiding first stop
+        {
+            const Connection* conn = FindConnectionByStops(previous, *it);
+            if (conn == nullptr)
+            {
+                conn = FindConnectionByStops(*it, previous);
+                if (conn != nullptr)
+                {
+                    route_length += conn->route_length;
+                }
+            }
+            else
+            {
+                route_length += conn->route_length;
+            }
+        }
+        previous = *it;
+        first_stop = false;
+    }
+
+    // Just go back if format is Bus X: A1 - A2 - ... - AN
+    if (!bus->cyclic_route)
+    {
+        std::deque<const Stop*> route_back = {bus->route.begin(), bus->route.end()};
+        first_stop = true;
+        previous = nullptr;
+        for (auto it = route_back.rbegin(); it != route_back.rend(); ++it)
+        {
+            if (!first_stop)    // avoiding first stop
+            {
+                const Connection* conn = FindConnectionByStops(previous, *it);
+                if (conn == nullptr)
+                {
+                    conn = FindConnectionByStops(*it, previous);
+                    if (conn != nullptr)
+                    {
+                        route_length += conn->route_length;
+                    }
+                }
+                else
+                {
+                    route_length += conn->route_length;
+                }
+            }
+            previous = *it;
+            first_stop = false;
+        }
+    }
+    else
+    {
+        // To the first (Format Bus X: A1 > A2 > ... AN => AN > A1)
+        // If AM > AM where M = [1, N] => 0 or Connection(AM, AM)
+        const Stop* first_stop = *bus->route.begin();
+        const Connection* conn = FindConnectionByStops(previous, first_stop);
+        if (conn == nullptr)
+        {
+            conn = FindConnectionByStops(first_stop, previous);
+            if (conn != nullptr)
+            {
+                route_length += conn->route_length;
+            }
+        }
+        else
+        {
+            route_length += conn->route_length;
+        }
+        
+    }
+    return route_length;
+}
+
+BusInfo TransportSystem::GetBusInfoByBus(const Bus* bus) const
+{   
+    if (bus == nullptr)     // not found
+    {
+        return {};
+    }
+    // Find amount of stops
+    size_t amount_of_stops = (!bus->cyclic_route) ? (bus->route.size() * 2u - 1u)
+        : (bus->route.size() + (((*bus).route.front() == (*bus).route.back()) ? (0u) : (1u)));  // Need to check: s1 > s2 == s1 > s2 > s1
+
+    // Count unique stops
+    size_t amount_of_unique_stops;
+
+    std::unordered_set<const Stop*> unique_stops, not_unique_stops;
+    for (const auto stop: bus->route)
+    {
+        if (!unique_stops.count(stop) && !not_unique_stops.count(stop))
+        {
+            unique_stops.insert(stop);
+        }
+        else if (not_unique_stops.count(stop))
+        {
+            not_unique_stops.insert(stop);
+        }
+    }
+    amount_of_unique_stops = unique_stops.size();
+    
+    double geo_route_length = ComputeGeoRoute(bus);     
+    double real_route_length = ComputeRealRoute(bus);
+    
     // Return info
-    return {amount_of_stops, amount_of_unique_stops, route_length};
+    return {amount_of_stops, amount_of_unique_stops, real_route_length, real_route_length / geo_route_length};
 }
 
 StopInfo TransportSystem::GetStopInfoByStop(const Stop* stop) const
@@ -129,6 +232,8 @@ StopInfo TransportSystem::GetStopInfoByStop(const Stop* stop) const
     }
     return all_stops_info_.at(stop);
 }
+
+
 
 // Help functionality (TODO: make another file for this)
 
