@@ -6,6 +6,14 @@
 #include "input_reader.h"
 #include "stat_reader.h"
 
+using namespace transport_system;
+using namespace transport_system::init;
+using namespace transport_system::init::detail;
+using namespace transport_system::read_queries;
+using namespace transport_system::read_queries::detail;
+using namespace transport_system::detail;
+
+
 namespace Test
 {
     // Function for comparing doubles
@@ -319,28 +327,22 @@ namespace Test
             };
             ProcessInitQueries(ts, init_queries);
 
-            const Connection* con1 = ts.FindConnectionByStops(ts.FindStopByName("X1"), ts.FindStopByName("X2"));
-            assert(con1->stop1->name == "X1");
-            assert(con1->stop2->name == "X2");
-            assert(dequal(con1->route_length, 3900));
+            const auto r1 = ts.FindConnectionValueByStops(ts.FindStopByName("X1"), ts.FindStopByName("X2"));
+            assert(dequal(r1, 3900.0));
+            const auto r2 = ts.FindConnectionValueByStops(ts.FindStopByName("X2"), ts.FindStopByName("X1"));
+            assert(dequal(r2, 3900.0));
 
-            const Connection* con2 = ts.FindConnectionByStops(ts.FindStopByName("X2"), ts.FindStopByName("X3"));
-            assert(con2->stop1->name == "X2");
-            assert(con2->stop2->name == "X3");
-            assert(dequal(con2->route_length, 9900));
+            const auto r3 = ts.FindConnectionValueByStops(ts.FindStopByName("X2"), ts.FindStopByName("X3"));
+            assert(dequal(r3, 3900.0));
 
-            const Connection* con3 = ts.FindConnectionByStops(ts.FindStopByName("X2"), ts.FindStopByName("X2"));
-            assert(con3->stop1->name == "X2");
-            assert(con3->stop2->name == "X2");
-            assert(dequal(con3->route_length, 100));
+            const auto r4 = ts.FindConnectionValueByStops(ts.FindStopByName("X2"), ts.FindStopByName("X2"));
+            assert(dequal(r4, 100));
 
-            const Connection* con4 = ts.FindConnectionByStops(ts.FindStopByName("X3"), ts.FindStopByName("X1"));
-            assert(con4->stop1->name == "X3");
-            assert(con4->stop2->name == "X1");
-            assert(dequal(con4->route_length, 9500));
+            const auto r5 = ts.FindConnectionValueByStops(ts.FindStopByName("X3"), ts.FindStopByName("X1"));
+            assert(dequal(r5, 9500));
 
-            const Connection* con5 = ts.FindConnectionByStops(ts.FindStopByName("X1"), ts.FindStopByName("X1"));
-            assert(con5 == nullptr);
+            const auto r6 = ts.FindConnectionValueByStops(ts.FindStopByName("X3"), ts.FindStopByName("X1"));
+            assert(dequal(r6, 0.0));
         }
 
         // Test2 Check route length
@@ -406,6 +408,6 @@ namespace Test
         //RUN_TEST(TestInputReader);
         //RUN_TEST(TestStatReader);
         //RUN_TEST(TestCriticalInput);
-        RUN_TEST(TetsLinkStops);
+        //RUN_TEST(TetsLinkStops); old
     }
 } // namespace Test

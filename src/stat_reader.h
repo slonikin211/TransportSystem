@@ -2,14 +2,25 @@
 
 #include "transport_catalogue.h"
 
-// Get stop name from StopInfo query
-std::string GetNameFromStopInfoQuery(std::string_view str);
+namespace transport_system
+{
+    namespace read_queries
+    {
+        namespace detail
+        {
+            // Get stop name from StopInfo query
+            std::string GetNameFromStopInfoQuery(std::string_view str);
 
-// Get bus name from BusInfo query
-std::string GetNameFromBusInfoQuery(std::string_view str);
+            // Get bus name from BusInfo query
+            std::string GetNameFromBusInfoQuery(std::string_view str);
 
-// Process queries from container (unordered set)
-std::string ProcessDBQueries(TransportSystem& t_system, const std::deque<std::string>& queries);
+            // Process queries from container (unordered set)
+            std::string ProcessDBQueries(TransportSystem& t_system, const std::deque<std::string>& queries);
+        }
 
-// Just convert cin to queries
-void InputReadDBQueries(TransportSystem& t_system);
+        // Just convert cin to queries
+        void InputReadDBQueriesFromCin(TransportSystem& t_system);
+
+    }
+}
+

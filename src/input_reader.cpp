@@ -1,7 +1,11 @@
 #include "input_reader.h"
 #include "transport_catalogue.h"
 
-Stop GetInitStopFromQuery(std::string_view str)
+
+using namespace transport_system::detail;
+using namespace help;
+
+Stop transport_system::init::detail::GetInitStopFromQuery(std::string_view str)
 {
     // Format
     // Stop X: coordX, coordY
@@ -42,7 +46,7 @@ Stop GetInitStopFromQuery(std::string_view str)
     return stop;
 }
 
-std::deque<std::string> ParseStopsFromQuery(std::string_view str)
+std::deque<std::string> transport_system::init::detail::ParseStopsFromQuery(std::string_view str)
 {
     using namespace std::string_view_literals;
     std::deque<std::string> result;
@@ -70,7 +74,7 @@ std::deque<std::string> ParseStopsFromQuery(std::string_view str)
     return result;
 }
 
-void SetStopsConnectionsFromQuery(TransportSystem& system, std::string_view str)
+void transport_system::init::detail::SetStopsConnectionsFromQuery(TransportSystem& system, std::string_view str)
 {
     // Format
     // Stop X: coordLat, coordLng, D1m to  stop1, D2m to stop2 and etc.
@@ -133,24 +137,18 @@ void SetStopsConnectionsFromQuery(TransportSystem& system, std::string_view str)
         double route_length = std::stod(std::string(current_stop_route_length));
 
         // Connect!
-        Connection to_add = 
-        {
-            stop1, 
-            stop2,
-            route_length
-        };
-
-        system.AddLinkStops(to_add);
+        std::pair<const Stop*, const Stop*> key_to_add(stop1, stop2);
+        system.AddLinkStops(key_to_add, route_length);
     }
 }
 
-bool CheckCycleRoute(std::string_view str)
+bool transport_system::init::detail::CheckCycleRoute(std::string_view str)
 {   
     // if true => delimiter is '>' => cyclic route
     return (str.find(">") != std::string_view::npos);
 }
 
-std::deque<std::string> ParseRouteFromQuery(std::string_view str)
+std::deque<std::string> transport_system::init::detail::ParseRouteFromQuery(std::string_view str)
 {
     using namespace std::string_view_literals;
     // Fromat 1:
@@ -190,7 +188,7 @@ std::deque<std::string> ParseRouteFromQuery(std::string_view str)
     return result;
 }
 
-Bus InitBusFromQuery(TransportSystem& t_system, std::string_view str)
+Bus transport_system::init::detail::InitBusFromQuery(TransportSystem& t_system, std::string_view str)
 {
     // Format 1:
     // Bus X: stop1 - stop2 - ... stopN
@@ -232,7 +230,7 @@ Bus InitBusFromQuery(TransportSystem& t_system, std::string_view str)
     return bus;
 }
 
-void ProcessInitQueries(TransportSystem& t_system, const std::deque<std::string>& queries)
+void transport_system::init::detail::ProcessInitQueries(TransportSystem& t_system, const std::deque<std::string>& queries)
 {
     // First of all we need to init stops, then routes (buses)
     std::deque<std::string_view> stop_queries, bus_queries;
@@ -270,7 +268,7 @@ void ProcessInitQueries(TransportSystem& t_system, const std::deque<std::string>
     }
 }
 
-void InputRead(TransportSystem& t_system)
+void transport_system::init::InputReadFromCin(TransportSystem& t_system)
 {
     std::deque<std::string> init_queries;
 
@@ -287,5 +285,5 @@ void InputRead(TransportSystem& t_system)
         }
     }
 
-    ProcessInitQueries(t_system, init_queries);
+    transport_system::init::detail::ProcessInitQueries(t_system, init_queries);
 }

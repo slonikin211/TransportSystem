@@ -7,6 +7,9 @@
 
 // Transport System
 
+using namespace transport_system;
+using namespace transport_system::detail;
+
 void TransportSystem::AddRoute(const Bus& bus)
 {
     // Init bus
@@ -28,12 +31,13 @@ void TransportSystem::AddStop(const Stop& stop)
     all_stops_ptrs_.insert(stop_ptr);
 }
 
-void TransportSystem::AddLinkStops(const Connection& connection)
+void TransportSystem::AddLinkStops(const std::pair<const Stop*, const Stop*>& connection, const double route)
 {
     // Add link
-    all_stops_connections_.push_back(std::move(connection));
-    Connection* conn_ptr = &all_stops_connections_.back();
-    all_stops_connections_ptrs_.insert(conn_ptr);
+    if (all_stops_connections_.count(connection) == 0u)     // first time to add
+    {
+        all_stops_connections_[connection] = route;
+    }
 }
 
 
@@ -59,16 +63,22 @@ const Stop* TransportSystem::FindStopByName(std::string_view name) const
     return (to_find != all_stops_.end()) ? (&(*to_find)) : (nullptr);
 }
 
-const Connection* TransportSystem::FindConnectionByStops(const Stop* stop1, const Stop* stop2) const
+double TransportSystem::FindConnectionValueByStops(const Stop* stop1, const Stop* stop2) const
 {
-    for (const auto& conn: all_stops_connections_)
+    std::pair<const Stop*, const Stop*> key(stop1, stop2);
+    if (all_stops_connections_.count(key) != 0u)
     {
-        if (stop1 == conn.stop1 && stop2 == conn.stop2)
+        return all_stops_connections_.at(key);
+    }
+    else
+    {
+        std::pair<const Stop*, const Stop*> key2(stop2, stop1);
+        if (all_stops_connections_.count(key2) != 0u)
         {
-            return &conn;
+            return all_stops_connections_.at(key2);
         }
     }
-    return nullptr;    // not found
+    return 0.0;    // not found
 }
 
 
@@ -121,19 +131,8 @@ double TransportSystem::ComputeRealRoute(const Bus* bus) const
     {
         if (!first_stop)    // avoiding first stop
         {
-            const Connection* conn = FindConnectionByStops(previous, *it);
-            if (conn == nullptr)
-            {
-                conn = FindConnectionByStops(*it, previous);
-                if (conn != nullptr)
-                {
-                    route_length += conn->route_length;
-                }
-            }
-            else
-            {
-                route_length += conn->route_length;
-            }
+            const double route_val = FindConnectionValueByStops(previous, *it);
+            route_length += route_val;
         }
         previous = *it;
         first_stop = false;
@@ -149,19 +148,8 @@ double TransportSystem::ComputeRealRoute(const Bus* bus) const
         {
             if (!first_stop)    // avoiding first stop
             {
-                const Connection* conn = FindConnectionByStops(previous, *it);
-                if (conn == nullptr)
-                {
-                    conn = FindConnectionByStops(*it, previous);
-                    if (conn != nullptr)
-                    {
-                        route_length += conn->route_length;
-                    }
-                }
-                else
-                {
-                    route_length += conn->route_length;
-                }
+                const double route_val = FindConnectionValueByStops(previous, *it);
+                route_length += route_val;
             }
             previous = *it;
             first_stop = false;
@@ -172,20 +160,8 @@ double TransportSystem::ComputeRealRoute(const Bus* bus) const
         // To the first (Format Bus X: A1 > A2 > ... AN => AN > A1)
         // If AM > AM where M = [1, N] => 0 or Connection(AM, AM)
         const Stop* first_stop = *bus->route.begin();
-        const Connection* conn = FindConnectionByStops(previous, first_stop);
-        if (conn == nullptr)
-        {
-            conn = FindConnectionByStops(first_stop, previous);
-            if (conn != nullptr)
-            {
-                route_length += conn->route_length;
-            }
-        }
-        else
-        {
-            route_length += conn->route_length;
-        }
-        
+        const double route_val = FindConnectionValueByStops(previous, first_stop);
+        route_length += route_val;
     }
     return route_length;
 }
@@ -238,17 +214,17 @@ StopInfo TransportSystem::GetStopInfoByStop(const Stop* stop) const
 // Help functionality (TODO: make another file for this)
 
 // trim from start (in place)
-void ltrim(std::string_view &s) {
+void help::ltrim(std::string_view &s) {
     while (s.front() == ' ') { s.remove_prefix(1u); }
 }
 
 // trim from end (in place)
-void rtrim(std::string_view &s) {
+void help::rtrim(std::string_view &s) {
     while (s.back() == ' ') { s.remove_suffix(1u); }
 }
 
 // trim from both ends (in place)
-void trim(std::string_view &s) {
+void help::trim(std::string_view &s) {
     ltrim(s);
     rtrim(s);
 }

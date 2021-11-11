@@ -1,4 +1,4 @@
-//#define TESTS
+#define TESTS
 
 #ifdef TESTS
     #include "tests.h"
@@ -13,9 +13,13 @@ int main()
 #ifdef TESTS
     Test::TestTransportSystem();
 #else
+    using namespace transport_system;
+    using namespace transport_system::init;
+    using namespace transport_system::read_queries;
+
     TransportSystem system;
-    InputRead(system);
-    InputReadDBQueries(system);
+    InputReadFromCin(system);
+    InputReadDBQueriesFromCin(system);
 #endif
 
     return 0;

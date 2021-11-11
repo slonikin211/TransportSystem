@@ -8,7 +8,11 @@
 #include <deque>
 #include <sstream>
 
-std::string GetNameFromStopInfoQuery(std::string_view str)
+using namespace transport_system;
+using namespace transport_system::detail;
+using namespace help;
+
+std::string transport_system::read_queries::detail::GetNameFromStopInfoQuery(std::string_view str)
 {
     // Stop => 4 letters + space => start position = 5
     std::string_view to_return = str.substr(5u, str.find(":") - 5u);
@@ -16,7 +20,7 @@ std::string GetNameFromStopInfoQuery(std::string_view str)
     return std::string(to_return);
 }
 
-std::string GetNameFromBusInfoQuery(std::string_view str)
+std::string transport_system::read_queries::detail::GetNameFromBusInfoQuery(std::string_view str)
 {
     // Bus => 3 letters + space => start position = 4
     std::string_view to_return = str.substr(4u, str.find(":") - 4u);
@@ -24,7 +28,7 @@ std::string GetNameFromBusInfoQuery(std::string_view str)
     return std::string(to_return);
 }
 
-std::string ProcessDBQueries(TransportSystem& t_system, const std::deque<std::string>& queries)
+std::string transport_system::read_queries::detail::ProcessDBQueries(TransportSystem& t_system, const std::deque<std::string>& queries)
 {
     using namespace std::string_literals;
     std::deque<std::string_view> all_queries;
@@ -102,7 +106,7 @@ std::string ProcessDBQueries(TransportSystem& t_system, const std::deque<std::st
     return ss.str();
 }
 
-void InputReadDBQueries(TransportSystem& t_system)
+void transport_system::read_queries::InputReadDBQueriesFromCin(TransportSystem& t_system)
 {
     std::deque<std::string> init_queries;
 
@@ -119,5 +123,5 @@ void InputReadDBQueries(TransportSystem& t_system)
         }
     }
 
-    std::cout << ProcessDBQueries(t_system, init_queries);
+    std::cout << detail::ProcessDBQueries(t_system, init_queries);
 }
