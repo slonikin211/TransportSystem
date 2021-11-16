@@ -1,4 +1,4 @@
-#define TESTS
+//#define TESTS
 
 #ifdef TESTS
     #include "tests.h"
