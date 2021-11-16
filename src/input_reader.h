@@ -10,6 +10,7 @@ namespace transport_system
 {
     namespace init
     {
+<<<<<<< HEAD
         namespace detail
         {
             // Parse string into Stop
@@ -39,5 +40,10 @@ namespace transport_system
     }
 
 
+=======
+        // Just convert cin to queries
+        void InputReadFromCin(transport_system::TransportSystem& t_system);
+    }
+>>>>>>> master
 }
 

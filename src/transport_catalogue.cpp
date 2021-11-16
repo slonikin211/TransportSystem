@@ -15,7 +15,10 @@ void TransportSystem::AddRoute(const Bus& bus)
     // Init bus
     all_busses_.push_back(std::move(bus));
     Bus* bus_ptr = &all_busses_.back();
+<<<<<<< HEAD
     all_busses_ptrs_.insert(bus_ptr);
+=======
+>>>>>>> master
 
     // Link bus to stops
     for (auto stop: bus_ptr->route)
@@ -27,8 +30,11 @@ void TransportSystem::AddRoute(const Bus& bus)
 void TransportSystem::AddStop(const Stop& stop)
 {
     all_stops_.push_back(std::move(stop));
+<<<<<<< HEAD
     Stop* stop_ptr = &all_stops_.back();
     all_stops_ptrs_.insert(stop_ptr);
+=======
+>>>>>>> master
 }
 
 void TransportSystem::AddLinkStops(const std::pair<const Stop*, const Stop*>& connection, const double route)

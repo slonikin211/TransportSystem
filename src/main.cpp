@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #define TESTS
+=======
+//#define TESTS
+>>>>>>> master
 
 #ifdef TESTS
     #include "tests.h"

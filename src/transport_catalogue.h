@@ -90,10 +90,15 @@ namespace transport_system
         double ComputeRealRoute(const detail::Bus* bus) const;
 
     private:
+<<<<<<< HEAD
         std::unordered_set<detail::Bus*> all_busses_ptrs_;
         std::deque<detail::Bus> all_busses_;
 
         std::unordered_set<detail::Stop*> all_stops_ptrs_;
+=======
+        std::deque<detail::Bus> all_busses_;
+
+>>>>>>> master
         std::deque<detail::Stop> all_stops_;
         std::unordered_map<const detail::Stop*, detail::StopInfo> all_stops_info_;
 

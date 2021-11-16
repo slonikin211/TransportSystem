@@ -6,6 +6,7 @@ namespace transport_system
 {
     namespace read_queries
     {
+<<<<<<< HEAD
         namespace detail
         {
             // Get stop name from StopInfo query
@@ -21,6 +22,10 @@ namespace transport_system
         // Just convert cin to queries
         void InputReadDBQueriesFromCin(TransportSystem& t_system);
 
+=======
+        // Just convert cin to queries
+        void InputReadDBQueriesFromCin(TransportSystem& t_system);
+>>>>>>> master
     }
 }
 
