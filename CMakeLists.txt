@@ -6,13 +6,17 @@ set(SOURCES
     src/main.cpp
 )
 set(HEADERS
-    src/geo.h
-    src/tests.h
+    #src/tests.h
 )
 set(PAIRS
-    src/input_reader.cpp src/input_reader.h
+    src/geo.cpp src/geo.h
     src/transport_catalogue.cpp src/transport_catalogue.h
-    src/stat_reader.cpp src/stat_reader.h
+    src/domain.cpp src/domain.h
+    src/json_reader.cpp src/json_reader.h
+    src/json.cpp src/json.h
+    #src/map_renderer.cpp src/map_renderer.h
+    src/request_handler.cpp src/request_handler.h
+    #src/svg.cpp src/svg.h
 )
 
 add_executable(Task ${SOURCES} ${HEADERS} ${PAIRS})

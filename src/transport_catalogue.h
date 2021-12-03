@@ -7,45 +7,13 @@
 #include <deque>
 #include <set>
 
-#include "geo.h"
+#include "domain.h"
 
 
 namespace transport_system
 {
     namespace detail
-    {
-        // Stop structure include stop name and coordinates
-        struct Stop
-        {
-            std::string name;
-            Coordinates coordinates;
-        };
-
-        // Bus structure include bus name and route
-        struct Bus
-        {
-            std::string name;
-            std::deque<const Stop*> route;
-            bool cyclic_route;
-        };
-
-
-        // Bus info for output
-        struct BusInfo
-        {
-            size_t amount_of_stops;
-            size_t amount_of_unique_stops;
-            double route_length;
-            double curvature;
-        };
-
-
-        // Stop info for output
-        struct StopInfo
-        {
-            std::set<const Bus*> buses;
-        };
-    
+    {    
         // Hasher for connection
         class ConnectionHasher
         {
@@ -61,7 +29,6 @@ namespace transport_system
         private:
             std::hash<void*> c_hasher_;
         };
-    
     }
 
     // Transport system class which includes next functionality
@@ -74,28 +41,28 @@ namespace transport_system
     class TransportSystem
     {
     public:
-        void AddRoute(const detail::Bus& bus);
-        void AddStop(const detail::Stop& stop);
-        void AddLinkStops(const std::pair<const detail::Stop*, const detail::Stop*>& connection, const double route);
+        void AddRoute(const subjects::obj::Bus& bus);
+        void AddStop(const subjects::obj::Stop& stop);
+        void AddLinkStops(const std::pair<const subjects::obj::Stop*, const subjects::obj::Stop*>& connection, const double route);
 
-        const detail::Bus* FindRouteByBusName(std::string_view name) const;
-        const detail::Stop* FindStopByName(std::string_view name) const;
-        double FindConnectionValueByStops(const detail::Stop* stop1, const detail::Stop* stop2) const;
+        const subjects::obj::Bus* FindRouteByBusName(std::string_view name) const;
+        const subjects::obj::Stop* FindStopByName(std::string_view name) const;
+        double FindConnectionValueByStops(const subjects::obj::Stop* stop1, const subjects::obj::Stop* stop2) const;
 
-        detail::BusInfo GetBusInfoByBus(const detail::Bus* bus) const;
-        detail::StopInfo GetStopInfoByStop(const detail::Stop* stop) const;
-
-    private:
-        double ComputeGeoRoute(const detail::Bus* bus) const;
-        double ComputeRealRoute(const detail::Bus* bus) const;
+        subjects::info::BusInfo GetBusInfoByBus(const subjects::obj::Bus* bus) const;
+        subjects::info::StopInfo GetStopInfoByStop(const subjects::obj::Stop* stop) const;
 
     private:
-        std::deque<detail::Bus> all_busses_;
+        double ComputeGeoRoute(const subjects::obj::Bus* bus) const;
+        double ComputeRealRoute(const subjects::obj::Bus* bus) const;
 
-        std::deque<detail::Stop> all_stops_;
-        std::unordered_map<const detail::Stop*, detail::StopInfo> all_stops_info_;
+    private:
+        std::deque<subjects::obj::Bus> all_busses_;
 
-        std::unordered_map<std::pair<const detail::Stop*, const detail::Stop*>, double, detail::ConnectionHasher> all_stops_connections_;
+        std::deque<subjects::obj::Stop> all_stops_;
+        std::unordered_map<const subjects::obj::Stop*, subjects::info::StopInfo> all_stops_info_;
+
+        std::unordered_map<std::pair<const subjects::obj::Stop*, const subjects::obj::Stop*>, double, detail::ConnectionHasher> all_stops_connections_;
     };
 
 }
