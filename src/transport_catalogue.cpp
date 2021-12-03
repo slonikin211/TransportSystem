@@ -6,35 +6,35 @@
 #include <locale>
 
 // Transport System
-
 using namespace transport_system;
 using namespace transport_system::detail;
+
+using namespace subjects::geo;
+using namespace subjects::obj;
+using namespace subjects::info;
+
+#include <iostream>
 
 void TransportSystem::AddRoute(const Bus& bus)
 {
     // Init bus
     all_busses_.push_back(std::move(bus));
     Bus* bus_ptr = &all_busses_.back();
-<<<<<<< HEAD
-    all_busses_ptrs_.insert(bus_ptr);
-=======
->>>>>>> master
 
     // Link bus to stops
     for (auto stop: bus_ptr->route)
     {
         all_stops_info_[stop].buses.insert(bus_ptr);
+        all_stops_info_[stop].stop = stop;
     }
 }
 
 void TransportSystem::AddStop(const Stop& stop)
 {
     all_stops_.push_back(std::move(stop));
-<<<<<<< HEAD
-    Stop* stop_ptr = &all_stops_.back();
-    all_stops_ptrs_.insert(stop_ptr);
-=======
->>>>>>> master
+
+    const Stop* pstop = &all_stops_.back();
+    all_stops_info_[pstop].stop = pstop;
 }
 
 void TransportSystem::AddLinkStops(const std::pair<const Stop*, const Stop*>& connection, const double route)
@@ -176,7 +176,7 @@ BusInfo TransportSystem::GetBusInfoByBus(const Bus* bus) const
 {   
     if (bus == nullptr)     // not found
     {
-        return {};
+        return {nullptr, 0u, 0u, 0.0, 0.0};
     }
     // Find amount of stops
     size_t amount_of_stops = (!bus->cyclic_route) ? (bus->route.size() * 2u - 1u)
@@ -203,14 +203,14 @@ BusInfo TransportSystem::GetBusInfoByBus(const Bus* bus) const
     double real_route_length = ComputeRealRoute(bus);
     
     // Return info
-    return {amount_of_stops, amount_of_unique_stops, real_route_length, real_route_length / geo_route_length};
+    return {bus, amount_of_stops, amount_of_unique_stops, real_route_length, real_route_length / geo_route_length};
 }
 
 StopInfo TransportSystem::GetStopInfoByStop(const Stop* stop) const
 {
     if (stop == nullptr || !all_stops_info_.count(stop))
     {
-        return {};
+        return {nullptr, {}};
     }
     return all_stops_info_.at(stop);
 }
