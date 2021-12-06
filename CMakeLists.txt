@@ -6,17 +6,18 @@ set(SOURCES
     src/main.cpp
 )
 set(HEADERS
-    #src/tests.h
+    src/test_rendering.hpp
 )
+# TODO: Generate pairs with prefix src/ using operator for
 set(PAIRS
     src/geo.cpp src/geo.h
-    src/transport_catalogue.cpp src/transport_catalogue.h
     src/domain.cpp src/domain.h
-    src/json_reader.cpp src/json_reader.h
     src/json.cpp src/json.h
-    #src/map_renderer.cpp src/map_renderer.h
+    src/json_reader.cpp src/json_reader.h
     src/request_handler.cpp src/request_handler.h
-    #src/svg.cpp src/svg.h
+    src/transport_catalogue.cpp src/transport_catalogue.h
+    src/svg.cpp src/svg.h
+    src/map_renderer.cpp src/map_renderer.h
 )
 
 add_executable(Task ${SOURCES} ${HEADERS} ${PAIRS})

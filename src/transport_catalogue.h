@@ -52,14 +52,21 @@ namespace transport_system
         subjects::info::BusInfo GetBusInfoByBus(const subjects::obj::Bus* bus) const;
         subjects::info::StopInfo GetStopInfoByStop(const subjects::obj::Stop* stop) const;
 
+        // Mainly for SVG printing info
+        const std::deque<const subjects::obj::Bus*>& GetBusesPointers() const;
+        const std::deque<const subjects::obj::Stop*>& GetStopPointers() const;
+        const std::deque<subjects::info::StopInfo>& GetStopInfo() const;
+
     private:
         double ComputeGeoRoute(const subjects::obj::Bus* bus) const;
         double ComputeRealRoute(const subjects::obj::Bus* bus) const;
 
     private:
         std::deque<subjects::obj::Bus> all_busses_;
+        std::deque<const subjects::obj::Bus*> p_all_busses_;
 
         std::deque<subjects::obj::Stop> all_stops_;
+        std::deque<const subjects::obj::Stop*> p_all_stops_;
         std::unordered_map<const subjects::obj::Stop*, subjects::info::StopInfo> all_stops_info_;
 
         std::unordered_map<std::pair<const subjects::obj::Stop*, const subjects::obj::Stop*>, double, detail::ConnectionHasher> all_stops_connections_;
