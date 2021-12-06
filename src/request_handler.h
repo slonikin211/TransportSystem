@@ -1,8 +1,10 @@
 #pragma once
 
 #include "transport_catalogue.h"
+#include "map_renderer.h"
 #include <vector>
 #include <map>
+#include <sstream>
 
 namespace request_handler
 {
@@ -51,6 +53,11 @@ namespace request_handler
         {
             std::set<std::string> buses;
         };
+
+        struct OutMap : OutQuery
+        {
+            std::ostringstream os;
+        };
     } // query
 
     namespace init
@@ -64,5 +71,6 @@ namespace request_handler
     {
         subjects::info::BusInfo GetBusInfo(const transport_system::TransportSystem& system, const request_handler::query::GetInfo& info);
         subjects::info::StopInfo GetStopInfo(const transport_system::TransportSystem& system, const request_handler::query::GetInfo& info);
+        void GetSVGDocument(const transport_system::TransportSystem& system, const map_renderer::detail::MapRendererSettings& settings, std::ostream& os);
     } // process
 } // request_handler

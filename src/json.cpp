@@ -59,12 +59,12 @@ namespace json {
     void NodeOutput::operator()(const std::string& str) const {
         out << "\"";
         for (const auto c : str) {
-            if (c == '\n') { out << "\\\n"; }
-            else if (c == '\r') { out << "\\\r"; }
+            if (c == '\n') { out << "\\n"; }
+            if (c == '\r') { out << "\\r"; }
             else if (c == '\"') { out << "\\\""; }
-            else if (c == '\t') { out << "\\\t"; }
+            else if (c == '\t') { out << "\\t"; }
             else if (c == '\\') { out << "\\\\"; }
-            else { out << c; }
+            else if (c != '\n') { out << c; }
         }
         out << "\"";
     }

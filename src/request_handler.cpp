@@ -8,6 +8,7 @@
 #include <deque>
 #include <sstream>
 #include <stdexcept>
+#include <ostream>
 
 using namespace std::string_literals;
 
@@ -16,6 +17,9 @@ using namespace transport_system::detail;
 using namespace help;
 using namespace subjects::obj;
 using namespace subjects::info;
+using namespace svg;
+using namespace map_renderer;
+using namespace map_renderer::detail;
 
 namespace request_handler
 {
@@ -71,6 +75,11 @@ namespace request_handler
                 throw std::logic_error("This is not a stop (GetStopInfo)");
             }
             return system.GetStopInfoByStop(system.FindStopByName(info.name));
+        }
+
+        void GetSVGDocument(const transport_system::TransportSystem& system, const map_renderer::detail::MapRendererSettings& settings, std::ostream& os)
+        {
+            PrintSVGMap(system.GetBusesPointers(), os, system.GetStopInfo(), settings);
         }
     } // process
 } // request_handler

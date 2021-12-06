@@ -27,6 +27,9 @@ void TransportSystem::AddRoute(const Bus& bus)
         all_stops_info_[stop].buses.insert(bus_ptr);
         all_stops_info_[stop].stop = stop;
     }
+
+    // Add to const bus ptrs
+    p_all_busses_.push_back(bus_ptr);
 }
 
 void TransportSystem::AddStop(const Stop& stop)
@@ -35,6 +38,9 @@ void TransportSystem::AddStop(const Stop& stop)
 
     const Stop* pstop = &all_stops_.back();
     all_stops_info_[pstop].stop = pstop;
+
+    // Add to all stops ptrs
+    p_all_stops_.push_back(pstop);
 }
 
 void TransportSystem::AddLinkStops(const std::pair<const Stop*, const Stop*>& connection, const double route)
@@ -215,7 +221,26 @@ StopInfo TransportSystem::GetStopInfoByStop(const Stop* stop) const
     return all_stops_info_.at(stop);
 }
 
+const std::deque<const subjects::obj::Bus*>& TransportSystem::GetBusesPointers() const
+{
+    return p_all_busses_;
+}
 
+const std::deque<const subjects::obj::Stop*>& TransportSystem::GetStopPointers() const
+{
+    return p_all_stops_;
+}
+
+const std::deque<StopInfo>& TransportSystem::GetStopInfo() const
+{
+    static std::deque<StopInfo> stop_infos;
+    if (stop_infos.empty()) {
+        for (const auto& el: all_stops_info_) {
+            stop_infos.push_back(el.second);
+        }
+    }
+    return stop_infos;
+}
 
 // Help functionality (TODO: make another file for this)
 
