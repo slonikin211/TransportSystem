@@ -1,6 +1,8 @@
 #include "geo.h"
 #include <math.h>
 
+const inline int EarthRadius = 6371000;
+
 inline bool dequal(const double num1, const double num2)
 {
     return std::fabs(num1 - num2) < 0.0001;
@@ -20,5 +22,5 @@ double subjects::geo::ComputeDistance(Coordinates from, Coordinates to)
         cos(from.lat * dr) * 
         cos(to.lat * dr) * 
         cos(fabs(from.lng - to.lng) * dr)
-    ) * 6371000;
+    ) * EarthRadius;
 }
