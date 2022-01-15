@@ -140,8 +140,8 @@ namespace Test
                     stops_info.push_back(ts.GetStopInfoByStop(el));
                 } 
 
-                std::ofstream ofs("../test_output/TestSVGPrintLines.svg"s);
-                map_renderer::PrintSVGMap(pbuses, pstops, ofs, stops_info);
+                //::ofstream ofs("../test_output/TestSVGPrintLines.svg"s);
+                //map_renderer::PrintSVGMap(pbuses, pstops, ofs, stops_info);
             }
         }
     }

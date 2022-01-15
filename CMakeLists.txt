@@ -13,6 +13,7 @@ set(PAIRS
     src/geo.cpp src/geo.h
     src/domain.cpp src/domain.h
     src/json.cpp src/json.h
+    src/json_builder.cpp src/json_builder.h
     src/json_reader.cpp src/json_reader.h
     src/request_handler.cpp src/request_handler.h
     src/transport_catalogue.cpp src/transport_catalogue.h

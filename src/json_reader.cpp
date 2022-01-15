@@ -1,5 +1,6 @@
 #include "json_reader.h"
 #include "map_renderer.h"
+#include "json_builder.h"
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -280,39 +281,42 @@ namespace json::read
                 void PrintAnswer(request_handler::query::OutQuery& q, std::ostream& os)
                 {
                     if (q.additional_data == "not found"s) {
-                        Node answer{Dict{
-                            {"request_id"s, q.id},
-                            {"error_message"s, "not found"s}
-                        }};
-                        std::visit(json::NodeOutput{os}, answer.GetRootContent());
+                        std::visit(json::NodeOutput{os}, json::Builder{}
+                            .StartDict()
+                                .Key("request_id"s).Value(q.id)
+                                .Key("error_message"s).Value("not found"s)
+                            .EndDict()
+                        .Build().GetRootContent());
                         return;
                     }
 
                     if (const OutBus* bus_info = dynamic_cast<const OutBus*>(&q)) {
-                        Node answer{Dict{
-                            {"request_id"s, q.id},
-                            {"curvature"s, bus_info->curvature},
-                            {"route_length"s, bus_info->route_length},
-                            {"stop_count"s, bus_info->stop_count},
-                            {"unique_stop_count"s, bus_info->unique_stop_count}
-                        } };
-                        std::visit(json::NodeOutput{os}, answer.GetRootContent());
+                        std::visit(json::NodeOutput{os}, json::Builder{}
+                            .StartDict()
+                                .Key("request_id"s).Value(q.id)
+                                .Key("curvature"s).Value(bus_info->curvature)
+                                .Key("route_length"s).Value(bus_info->route_length)
+                                .Key("stop_count"s).Value(bus_info->stop_count)
+                                .Key("unique_stop_count"s).Value(bus_info->unique_stop_count)
+                            .EndDict()
+                        .Build().GetRootContent());
                     }
                     else if (const OutStop* stop_info = dynamic_cast<const OutStop*>(&q)) {
-                        Node answer{Dict{
-                            {"request_id"s, q.id},
-                            {"buses"s, Array{stop_info->buses.begin(), stop_info->buses.end()}}
-                        } };
-                        std::visit(json::NodeOutput{os}, answer.GetRootContent());
+                        std::visit(json::NodeOutput{os}, json::Builder{}
+                            .StartDict()
+                                .Key("request_id"s).Value(q.id)
+                                .Key("buses"s).Value(Array{stop_info->buses.begin(), stop_info->buses.end()})
+                            .EndDict()
+                        .Build().GetRootContent());
                     }
                     else if (const OutMap* map_info = dynamic_cast<const OutMap*>(&q)) {
-                        // TODO: Разобраться с \n для вывода
                         std::string data = map_info->os.str();
-                        Node answer{Dict{
-                            {"request_id"s, q.id},
-                            {"map"s, Node(data)}
-                        } };
-                        std::visit(json::NodeOutput{os}, answer.GetRootContent());
+                        std::visit(json::NodeOutput{os}, json::Builder{}
+                            .StartDict()
+                                .Key("request_id"s).Value(q.id)
+                                .Key("map"s).Value(Node(data))
+                            .EndDict()
+                        .Build().GetRootContent());
                     }
                     // else incorrect type (never)
                 }
