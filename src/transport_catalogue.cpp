@@ -4,16 +4,15 @@
 #include <cassert>
 #include <cctype>
 #include <locale>
+#include <iostream>
 
 // Transport System
 using namespace transport_system;
-using namespace transport_system::detail;
 
-using namespace subjects::geo;
-using namespace subjects::obj;
-using namespace subjects::info;
+using namespace geo;
+using namespace obj;
+using namespace info;
 
-#include <iostream>
 
 void TransportSystem::AddRoute(const Bus& bus)
 {
@@ -221,12 +220,12 @@ StopInfo TransportSystem::GetStopInfoByStop(const Stop* stop) const
     return all_stops_info_.at(stop);
 }
 
-const std::deque<const subjects::obj::Bus*>& TransportSystem::GetBusesPointers() const
+const std::deque<const obj::Bus*>& TransportSystem::GetBusesPointers() const
 {
     return p_all_busses_;
 }
 
-const std::deque<const subjects::obj::Stop*>& TransportSystem::GetStopPointers() const
+const std::deque<const obj::Stop*>& TransportSystem::GetStopPointers() const
 {
     return p_all_stops_;
 }
@@ -240,22 +239,4 @@ const std::deque<StopInfo>& TransportSystem::GetStopInfo() const
         }
     }
     return stop_infos;
-}
-
-// Help functionality (TODO: make another file for this)
-
-// trim from start (in place)
-void help::ltrim(std::string_view &s) {
-    while (s.front() == ' ') { s.remove_prefix(1u); }
-}
-
-// trim from end (in place)
-void help::rtrim(std::string_view &s) {
-    while (s.back() == ' ') { s.remove_suffix(1u); }
-}
-
-// trim from both ends (in place)
-void help::trim(std::string_view &s) {
-    ltrim(s);
-    rtrim(s);
 }

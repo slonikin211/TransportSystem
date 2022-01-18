@@ -8,7 +8,7 @@ inline bool dequal(const double num1, const double num2)
     return std::fabs(num1 - num2) < 0.0001;
 }
 
-double subjects::geo::ComputeDistance(Coordinates from, Coordinates to) 
+double geo::ComputeDistance(Coordinates from, Coordinates to) 
 {
     using namespace std;
     if (dequal(from.lat, to.lat) && dequal(from.lng, to.lng))

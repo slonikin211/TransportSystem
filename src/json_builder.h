@@ -14,75 +14,41 @@ namespace json {
     class BaseContext {
     public:
         BaseContext(Builder& builder);
-
         DictItemContext StartDict();
         ArrayItemContext StartArray();
-
         Builder& EndDict();
         Builder& EndArray();
-
         KeyItemContext Key(std::string key);
         Builder& Value(Node value);
-
-    private:
+    protected:
         Builder& builder_;
-    };
-
-    class KeyItemContext : public BaseContext {
-    public:
-        KeyItemContext(Builder& builder);
-
-        Builder& EndDict() = delete;
-        Builder& EndArray() = delete;
-
-        Builder& Key(std::string key) = delete;
-        KeyValueItemContext Value(Node value);
-    };
-
-    class KeyValueItemContext : public BaseContext {
-    public:
-        KeyValueItemContext(Builder& builder);
-
-        DictItemContext StartDict() = delete;
-        ArrayItemContext StartArray() = delete;
-
-        Builder& EndArray() = delete;
-
-        Builder& Value(Node value) = delete;
     };
 
     class DictItemContext : public BaseContext {
     public:
         DictItemContext(Builder& builder);
-
         DictItemContext StartDict() = delete;
         ArrayItemContext StartArray() = delete;
-
         Builder& EndArray() = delete;
-
         Builder& Value(Node value) = delete;
+    };
+
+    class KeyItemContext : public BaseContext {
+    public:
+        KeyItemContext(Builder& builder);
+        Builder& EndDict() = delete;
+        Builder& EndArray() = delete;
+        Builder& Key(std::string key) = delete;
+        BaseContext Value(Node value);
     };
 
     class ArrayItemContext : public BaseContext {
     public:
         ArrayItemContext(Builder& builder);
-
         Builder& EndDict() = delete;
-
         KeyItemContext Key(std::string key) = delete;
-        ArrayValueItemContext Value(Node value);
-    };
-
-    class ArrayValueItemContext : public BaseContext {
-    public:
-        ArrayValueItemContext(Builder& builder);
-
-        Builder& EndDict() = delete;
-
-        KeyItemContext Key(std::string key) = delete;
-        ArrayValueItemContext Value(Node value);
-
-    };
+        BaseContext Value(Node value);
+    };  
 
     class Builder {
     public:

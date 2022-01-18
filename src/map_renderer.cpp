@@ -5,9 +5,8 @@
 #include <fstream>
 
 using namespace svg;
-using namespace subjects;
-using namespace subjects::obj;
-using namespace subjects::info;
+using namespace obj;
+using namespace info;
 using namespace map_renderer::detail;
 
 template <typename T>
@@ -93,7 +92,7 @@ namespace map_renderer
     {
         size_t TransportMap::Route::current_color = 0u;
 
-        TransportMap::TransportMap(const std::deque<const subjects::obj::Bus*>& buses, const std::deque<subjects::info::StopInfo>& stops_info,
+        TransportMap::TransportMap(const std::deque<const obj::Bus*>& buses, const std::deque<info::StopInfo>& stops_info,
                 const MapRendererSettings& settings, const map_renderer::SphereProjector& projector)
             :buses_(buses), stops_info_(stops_info), settings_(settings), projector_(projector)
         {
@@ -145,7 +144,7 @@ namespace map_renderer
             }
         }
 
-        void TransportMap::RenderPolyline(Route& route, const Bus* bus)
+        void TransportMap::RenderPolyline(Route& route, const obj::Bus* bus)
         {
             Polyline& line = route.route_line;
 
@@ -172,7 +171,7 @@ namespace map_renderer
                 .SetStrokeLineJoin(StrokeLineJoin::ROUND);
         }
 
-        void TransportMap::RenderText(Route& route, const subjects::obj::Bus* bus)
+        void TransportMap::RenderText(Route& route, const obj::Bus* bus)
         {
             // always print first stop
             // if route is not rounded and last stops are not equal then print stop
@@ -236,7 +235,7 @@ namespace map_renderer
             }
         }
 
-        Circle TransportMap::RenderStopCirlcle(const subjects::obj::Stop* stop)
+        Circle TransportMap::RenderStopCirlcle(const obj::Stop* stop)
         {
             Circle circle;
             circle
@@ -246,7 +245,7 @@ namespace map_renderer
             return circle;
         }
 
-        std::pair<svg::Text, svg::Text> TransportMap::RenderStopName(const Stop* stop)
+        std::pair<svg::Text, svg::Text> TransportMap::RenderStopName(const obj::Stop* stop)
         {
             assert(stop != nullptr);
 
@@ -273,7 +272,7 @@ namespace map_renderer
             return {high, under};
         }
 
-        std::pair<svg::Text, svg::Text> TransportMap::GetStopNameText(const Bus* bus, const Stop* stop, const Color& color)
+        std::pair<svg::Text, svg::Text> TransportMap::GetStopNameText(const obj::Bus* bus, const obj::Stop* stop, const Color& color)
         {
             assert(stop != nullptr);
 
@@ -305,9 +304,9 @@ namespace map_renderer
     } // namespace detail
     //////////////////////// TransportMap END ////////////////////////
 
-    std::deque<subjects::geo::Coordinates> GetPointsFromStops(const std::deque<StopInfo>& stops_info) 
+    std::deque<geo::Coordinates> GetPointsFromStops(const std::deque<StopInfo>& stops_info) 
     {
-        std::deque<subjects::geo::Coordinates> res;
+        std::deque<geo::Coordinates> res;
         for (const auto& stop: stops_info) {
             if (!stop.buses.empty()) {
                 res.push_back(stop.stop->coordinates);
@@ -316,7 +315,7 @@ namespace map_renderer
         return res;
     }
  
-    void PrintSVGMap(const std::deque<const Bus*>& buses,
+    void PrintSVGMap(const std::deque<const obj::Bus*>& buses,
         std::ostream& out, const std::deque<StopInfo>& stops_info,
         const map_renderer::detail::MapRendererSettings& settings)
     {

@@ -32,7 +32,7 @@ namespace map_renderer
         class TransportMap
         {
         public:
-            TransportMap(const std::deque<const subjects::obj::Bus*>& buses, const std::deque<subjects::info::StopInfo>& stops_info,
+            TransportMap(const std::deque<const obj::Bus*>& buses, const std::deque<info::StopInfo>& stops_info,
                 const MapRendererSettings& settings, const map_renderer::SphereProjector& projector);
             void ProcessDrawing();
             void GetSVGDocument(svg::Document& doc);
@@ -52,22 +52,22 @@ namespace map_renderer
             void RenderRoutes();
             void RenderStops();
 
-            void RenderPolyline(Route& route, const subjects::obj::Bus* bus);
-            void RenderText(Route& route, const subjects::obj::Bus* bus);
-            svg::Circle RenderStopCirlcle(const subjects::obj::Stop* stop);
-            std::pair<svg::Text, svg::Text> RenderStopName(const subjects::obj::Stop* stop);
+            void RenderPolyline(Route& route, const obj::Bus* bus);
+            void RenderText(Route& route, const obj::Bus* bus);
+            svg::Circle RenderStopCirlcle(const obj::Stop* stop);
+            std::pair<svg::Text, svg::Text> RenderStopName(const obj::Stop* stop);
         
             // Help functions
-            std::pair<svg::Text, svg::Text> GetStopNameText(const subjects::obj::Bus* bus, const subjects::obj::Stop* stop, const svg::Color& color);  
+            std::pair<svg::Text, svg::Text> GetStopNameText(const obj::Bus* bus, const obj::Stop* stop, const svg::Color& color);  
         private:
-            const std::deque<const subjects::obj::Bus*>& buses_;
-            const std::deque<subjects::info::StopInfo>& stops_info_;
+            const std::deque<const obj::Bus*>& buses_;
+            const std::deque<info::StopInfo>& stops_info_;
             const MapRendererSettings& settings_;
             const map_renderer::SphereProjector& projector_;
         };
     }
 
-    void PrintSVGMap(const std::deque<const subjects::obj::Bus*>& buses,
-        std::ostream& out, const std::deque<subjects::info::StopInfo>& stops_info,
+    void PrintSVGMap(const std::deque<const obj::Bus*>& buses,
+        std::ostream& out, const std::deque<info::StopInfo>& stops_info,
         const map_renderer::detail::MapRendererSettings& settings);
 } // map_renderer

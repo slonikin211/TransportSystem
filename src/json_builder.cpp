@@ -1,5 +1,4 @@
 #include "json_builder.h"
-#include <utility>
 
 namespace json {
 
@@ -33,35 +32,21 @@ namespace json {
     // KeyItemContext
 
     KeyItemContext::KeyItemContext(Builder &builder) : BaseContext(builder) {}
-
-    KeyValueItemContext KeyItemContext::Value(Node value) {
-        return BaseContext::Value(std::move(value));
+    
+    BaseContext KeyItemContext::Value(Node value) {
+        return KeyItemContext(builder_.Value(std::move(value)));
     }
-
-    // KeyValueItemContext
-
-    KeyValueItemContext::KeyValueItemContext(Builder &builder) : BaseContext(builder) {}
-
-
+    
     // DictItemContext
 
     DictItemContext::DictItemContext(Builder &builder) : BaseContext(builder) {}
-
 
     // ArrayItemContext
 
     ArrayItemContext::ArrayItemContext(Builder &builder) : BaseContext(builder) {}
 
-    ArrayValueItemContext ArrayItemContext::Value(Node value) {
-        return BaseContext::Value(std::move(value));
-    }
-
-    // ArrayValueItemContext
-
-    ArrayValueItemContext::ArrayValueItemContext(Builder &builder) : BaseContext(builder) {}
-
-    ArrayValueItemContext ArrayValueItemContext::Value(Node value) {
-        return BaseContext::Value(std::move(value));
+    BaseContext ArrayItemContext::Value(Node value) {
+        return ArrayItemContext(builder_.Value(std::move(value)));
     }
 
     // Builder
@@ -99,7 +84,7 @@ namespace json {
     }
 
     Builder &Builder::EndDict() {
-        if (nodes_stack_.empty() || !nodes_stack_.back()->IsMap()) {
+        if (nodes_stack_.empty() || !nodes_stack_.back()->IsDict()) {
             throw std::logic_error("Try to end Dict in empty object or not in Dict");
         }
         nodes_stack_.erase(nodes_stack_.end() - 1);
@@ -115,10 +100,10 @@ namespace json {
     }
 
     KeyItemContext Builder::Key(std::string key) {
-        if (nodes_stack_.empty() || !nodes_stack_.back()->IsMap()) {
+        if (nodes_stack_.empty() || !nodes_stack_.back()->IsDict()) {
             throw std::logic_error("Try to insert Key in ready object or not in Dict");
         }
-        nodes_stack_.emplace_back(&const_cast<Dict&>(nodes_stack_.back()->AsMap())[key]);
+        nodes_stack_.emplace_back(&const_cast<Dict&>(nodes_stack_.back()->AsDict())[key]);
         return *this;
     }
 

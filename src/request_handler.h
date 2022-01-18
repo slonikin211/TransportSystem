@@ -15,7 +15,7 @@ namespace request_handler
         struct InitStop
         {
             std::string name;
-            subjects::geo::Coordinates coords;
+            geo::Coordinates coords;
             std::map<std::string, double> road_distances;
         };
         struct InitBus
@@ -69,8 +69,8 @@ namespace request_handler
 
     namespace process
     {
-        subjects::info::BusInfo GetBusInfo(const transport_system::TransportSystem& system, const request_handler::query::GetInfo& info);
-        subjects::info::StopInfo GetStopInfo(const transport_system::TransportSystem& system, const request_handler::query::GetInfo& info);
+        info::BusInfo GetBusInfo(const transport_system::TransportSystem& system, const request_handler::query::GetInfo& info);
+        info::StopInfo GetStopInfo(const transport_system::TransportSystem& system, const request_handler::query::GetInfo& info);
         void GetSVGDocument(const transport_system::TransportSystem& system, const map_renderer::detail::MapRendererSettings& settings, std::ostream& os);
     } // process
 } // request_handler

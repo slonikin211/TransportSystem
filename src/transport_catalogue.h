@@ -41,50 +41,35 @@ namespace transport_system
     class TransportSystem
     {
     public:
-        void AddRoute(const subjects::obj::Bus& bus);
-        void AddStop(const subjects::obj::Stop& stop);
-        void AddLinkStops(const std::pair<const subjects::obj::Stop*, const subjects::obj::Stop*>& connection, const double route);
+        void AddRoute(const obj::Bus& bus);
+        void AddStop(const obj::Stop& stop);
+        void AddLinkStops(const std::pair<const obj::Stop*, const obj::Stop*>& connection, const double route);
 
-        const subjects::obj::Bus* FindRouteByBusName(std::string_view name) const;
-        const subjects::obj::Stop* FindStopByName(std::string_view name) const;
-        double FindConnectionValueByStops(const subjects::obj::Stop* stop1, const subjects::obj::Stop* stop2) const;
+        const obj::Bus* FindRouteByBusName(std::string_view name) const;
+        const obj::Stop* FindStopByName(std::string_view name) const;
+        double FindConnectionValueByStops(const obj::Stop* stop1, const obj::Stop* stop2) const;
 
-        subjects::info::BusInfo GetBusInfoByBus(const subjects::obj::Bus* bus) const;
-        subjects::info::StopInfo GetStopInfoByStop(const subjects::obj::Stop* stop) const;
+        info::BusInfo GetBusInfoByBus(const obj::Bus* bus) const;
+        info::StopInfo GetStopInfoByStop(const obj::Stop* stop) const;
 
         // Mainly for SVG printing info
-        const std::deque<const subjects::obj::Bus*>& GetBusesPointers() const;
-        const std::deque<const subjects::obj::Stop*>& GetStopPointers() const;
-        const std::deque<subjects::info::StopInfo>& GetStopInfo() const;
+        const std::deque<const obj::Bus*>& GetBusesPointers() const;
+        const std::deque<const obj::Stop*>& GetStopPointers() const;
+        const std::deque<info::StopInfo>& GetStopInfo() const;
 
     private:
-        double ComputeGeoRoute(const subjects::obj::Bus* bus) const;
-        double ComputeRealRoute(const subjects::obj::Bus* bus) const;
+        double ComputeGeoRoute(const obj::Bus* bus) const;
+        double ComputeRealRoute(const obj::Bus* bus) const;
 
     private:
-        std::deque<subjects::obj::Bus> all_busses_;
-        std::deque<const subjects::obj::Bus*> p_all_busses_;
+        std::deque<obj::Bus> all_busses_;
+        std::deque<const obj::Bus*> p_all_busses_;
 
-        std::deque<subjects::obj::Stop> all_stops_;
-        std::deque<const subjects::obj::Stop*> p_all_stops_;
-        std::unordered_map<const subjects::obj::Stop*, subjects::info::StopInfo> all_stops_info_;
+        std::deque<obj::Stop> all_stops_;
+        std::deque<const obj::Stop*> p_all_stops_;
+        std::unordered_map<const obj::Stop*, info::StopInfo> all_stops_info_;
 
-        std::unordered_map<std::pair<const subjects::obj::Stop*, const subjects::obj::Stop*>, double, detail::ConnectionHasher> all_stops_connections_;
+        std::unordered_map<std::pair<const obj::Stop*, const obj::Stop*>, double, detail::ConnectionHasher> all_stops_connections_;
     };
 
-}
-
-
-namespace help
-{
-    // Help functionality FOR REMOTE TESTS ONLY (TODO: make another file for this)
-
-    // trim from start (in place)
-    void ltrim(std::string_view &s);
-
-    // trim from end (in place)
-    void rtrim(std::string_view &s);
-
-    // trim from both ends (in place)
-    void trim(std::string_view &s);
 }

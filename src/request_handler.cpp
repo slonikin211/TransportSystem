@@ -14,9 +14,8 @@ using namespace std::string_literals;
 
 using namespace transport_system;
 using namespace transport_system::detail;
-using namespace help;
-using namespace subjects::obj;
-using namespace subjects::info;
+using namespace obj;
+using namespace info;
 using namespace svg;
 using namespace map_renderer;
 using namespace map_renderer::detail;

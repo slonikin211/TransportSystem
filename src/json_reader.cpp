@@ -15,10 +15,9 @@ using namespace transport_system;
 using namespace request_handler;
 using namespace request_handler::query;
 using namespace request_handler::init;
-using namespace subjects;
-using namespace subjects::geo;
-using namespace subjects::obj;
-using namespace subjects::info;
+using namespace geo;
+using namespace obj;
+using namespace info;
 using namespace map_renderer;
 using namespace map_renderer::detail;
 
@@ -92,19 +91,19 @@ namespace json::read
         {
             namespace
             {
-                query::InitStop MakeQueryInitStop(const Dict& q)
+                query::InitStop MakeQueryInitStop(const Dict& query)
                 {
-                    const string& type = q.at("type"s).AsString();
+                    const string& type = query.at("type"s).AsString();
 
                     if (type != "Stop"s) {
                         throw logic_error("Invalid type for MakeQueryInitStop");
                     }
 
-                    const string& name = q.at("name"s).AsString();
-                    double lat = q.at("latitude"s).AsDouble();
-                    double lng = q.at("longitude"s).AsDouble();
+                    const string& name = query.at("name"s).AsString();
+                    double lat = query.at("latitude"s).AsDouble();
+                    double lng = query.at("longitude"s).AsDouble();
 
-                    const Dict& road_distances = q.at("road_distances"s).AsMap();
+                    const Dict& road_distances = query.at("road_distances"s).AsDict();
                     map<string, double> road_distances_res;
 
                     for (const auto stop_info: road_distances) {
@@ -118,18 +117,18 @@ namespace json::read
                     };
                 }
             
-                query::InitBus MakeQueryInitBus(const Dict& q)
+                query::InitBus MakeQueryInitBus(const Dict& query)
                 {
-                    const string& type = q.at("type"s).AsString();
+                    const string& type = query.at("type"s).AsString();
 
                     if (type != "Bus"s) {
                         throw logic_error("Invalid type for MakeQueryInitBus");
                     }
 
-                    const string& name = q.at("name"s).AsString();
-                    bool is_roundtrip = q.at("is_roundtrip"s).AsBool();
+                    const string& name = query.at("name"s).AsString();
+                    bool is_roundtrip = query.at("is_roundtrip"s).AsBool();
 
-                    const Array& stops = q.at("stops"s).AsArray();
+                    const Array& stops = query.at("stops"s).AsArray();
                     vector<string> stops_res;
 
                     stops_res.reserve(stops.size());
@@ -145,24 +144,24 @@ namespace json::read
                 }
             }
 
-            void ProceedInitStop(TransportSystem& system, const Dict& q)
+            void ProceedInitStop(TransportSystem& system, const Dict& query)
             {
-                const string& type = q.at("type"s).AsString();
+                const string& type = query.at("type"s).AsString();
                 if (type != "Stop"s) {
                     return;
                 }
-                request_handler::init::InitStop(system, MakeQueryInitStop(q));
+                request_handler::init::InitStop(system, MakeQueryInitStop(query));
             }
 
-            void ProceedInitQuery(TransportSystem& system, const Dict& q)
+            void ProceedInitQuery(TransportSystem& system, const Dict& query)
             {
-                const string& type = q.at("type"s).AsString();
+                const string& type = query.at("type"s).AsString();
                 if (type == "Stop"s) {
                     // Init was at previos finction called ProceedInitStop, so here is just linking
-                    request_handler::init::InitStopsConnections(system, MakeQueryInitStop(q));                  
+                    request_handler::init::InitStopsConnections(system, MakeQueryInitStop(query));                  
                 }
                 else if (type == "Bus"s) {
-                    request_handler::init::InitBus(system, MakeQueryInitBus(q));
+                    request_handler::init::InitBus(system, MakeQueryInitBus(query));
                 }
             }
 
@@ -171,12 +170,12 @@ namespace json::read
         {
             // Init stops first
             for (const auto& query: init) {
-                init::ProceedInitStop(system, query.AsMap());
+                init::ProceedInitStop(system, query.AsDict());
             }
 
             // Init all queries (with link stops)
             for (const auto& query: init) {
-                init::ProceedInitQuery(system, query.AsMap());
+                init::ProceedInitQuery(system, query.AsDict());
             }
         }
     
@@ -258,7 +257,7 @@ namespace json::read
                 deque<unique_ptr<OutQuery>> result;
 
                 for (const auto& query: queries) {
-                    const auto& q = query.AsMap();
+                    const auto& q = query.AsDict();
                     if (q.at("type"s) == "Bus"s) {
                         result.push_back(move(make_unique<OutBus>(ProceedBusQuery(system, q))));
                     }
@@ -278,45 +277,61 @@ namespace json::read
         {
             namespace
             {
-                void PrintAnswer(request_handler::query::OutQuery& q, std::ostream& os)
+                void PrintAnswer(request_handler::query::OutQuery& query, std::ostream& os)
                 {
-                    if (q.additional_data == "not found"s) {
-                        std::visit(json::NodeOutput{os}, json::Builder{}
-                            .StartDict()
-                                .Key("request_id"s).Value(q.id)
-                                .Key("error_message"s).Value("not found"s)
-                            .EndDict()
-                        .Build().GetRootContent());
+                    if (query.additional_data == "not found"s) {
+                        json::Print(
+                            json::Document{
+                                json::Builder{}
+                                    .StartDict()
+                                        .Key("request_id"s).Value(query.id)
+                                        .Key("error_message"s).Value("not found"s)
+                                    .EndDict()
+                                .Build()
+                            }, os
+                        );
                         return;
                     }
 
-                    if (const OutBus* bus_info = dynamic_cast<const OutBus*>(&q)) {
-                        std::visit(json::NodeOutput{os}, json::Builder{}
-                            .StartDict()
-                                .Key("request_id"s).Value(q.id)
-                                .Key("curvature"s).Value(bus_info->curvature)
-                                .Key("route_length"s).Value(bus_info->route_length)
-                                .Key("stop_count"s).Value(bus_info->stop_count)
-                                .Key("unique_stop_count"s).Value(bus_info->unique_stop_count)
-                            .EndDict()
-                        .Build().GetRootContent());
+                    if (const OutBus* bus_info = dynamic_cast<const OutBus*>(&query)) {
+                        json::Print(
+                            json::Document{
+                                json::Builder{}
+                                    .StartDict()
+                                        .Key("request_id"s).Value(query.id)
+                                        .Key("curvature"s).Value(bus_info->curvature)
+                                        .Key("route_length"s).Value(bus_info->route_length)
+                                        .Key("stop_count"s).Value(bus_info->stop_count)
+                                        .Key("unique_stop_count"s).Value(bus_info->unique_stop_count)
+                                    .EndDict()
+                                .Build()
+                            }, os
+                        );
                     }
-                    else if (const OutStop* stop_info = dynamic_cast<const OutStop*>(&q)) {
-                        std::visit(json::NodeOutput{os}, json::Builder{}
-                            .StartDict()
-                                .Key("request_id"s).Value(q.id)
-                                .Key("buses"s).Value(Array{stop_info->buses.begin(), stop_info->buses.end()})
-                            .EndDict()
-                        .Build().GetRootContent());
+                    else if (const OutStop* stop_info = dynamic_cast<const OutStop*>(&query)) {
+                        json::Print(
+                            json::Document{
+                                json::Builder{}
+                                    .StartDict()
+                                        .Key("request_id"s).Value(query.id)
+                                        .Key("buses"s).Value(Array{stop_info->buses.begin(), stop_info->buses.end()})
+                                    .EndDict()
+                                .Build()
+                            }, os
+                        );
                     }
-                    else if (const OutMap* map_info = dynamic_cast<const OutMap*>(&q)) {
+                    else if (const OutMap* map_info = dynamic_cast<const OutMap*>(&query)) {
                         std::string data = map_info->os.str();
-                        std::visit(json::NodeOutput{os}, json::Builder{}
-                            .StartDict()
-                                .Key("request_id"s).Value(q.id)
-                                .Key("map"s).Value(Node(data))
-                            .EndDict()
-                        .Build().GetRootContent());
+                        json::Print(
+                            json::Document{
+                                json::Builder{}
+                                    .StartDict()
+                                        .Key("request_id"s).Value(query.id)
+                                        .Key("map"s).Value(Node(data))
+                                    .EndDict()
+                                .Build()
+                            }, os
+                        );
                     }
                     // else incorrect type (never)
                 }
@@ -350,11 +365,11 @@ namespace json::read
     {
         Document doc = Load(cin);
 
-        const auto& root = doc.GetRoot().AsMap();
+        const auto& root = doc.GetRoot().AsDict();
         const auto& init_queries = root.at("base_requests"s).AsArray();
         const auto& proc_queries = root.at("stat_requests"s).AsArray();
         
-        const auto& render_setting = root.at("render_settings"s).AsMap();
+        const auto& render_setting = root.at("render_settings"s).AsDict();
         MapRendererSettings settings = render::InitSettings(render_setting);
 
         // For test
