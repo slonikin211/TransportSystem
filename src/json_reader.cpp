@@ -13,13 +13,13 @@ using namespace svg;
 using namespace json;
 using namespace transport_system;
 using namespace request_handler;
-using namespace request_handler::query;
-using namespace request_handler::init;
+using namespace request_handler::query;     // cannot to delete the namespace
+using namespace request_handler::init;      // cannot to delete the namespace
 using namespace geo;
 using namespace obj;
 using namespace info;
 using namespace map_renderer;
-using namespace map_renderer::detail;
+using namespace map_renderer::detail;       // cannot to delete the namespace
 
 
 namespace render
