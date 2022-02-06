@@ -43,4 +43,11 @@ namespace info
         const obj::Stop* stop;
         std::set<const obj::Bus*> buses;
     };
+
+    // Route info from input
+    struct RouteInfo
+    {
+        std::string from;
+        std::string to;
+    };
 }   

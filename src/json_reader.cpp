@@ -1,6 +1,8 @@
 #include "json_reader.h"
 #include "map_renderer.h"
 #include "json_builder.h"
+#include "transport_router.h"
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -53,7 +55,7 @@ namespace render
         }
     }
 
-    MapRendererSettings InitSettings(const Dict& root) 
+    MapRendererSettings InitMapRendererSettings(const Dict& root) 
     {
         MapRendererSettings settings;
         settings.width = root.at("width"s).AsDouble();
@@ -166,7 +168,7 @@ namespace json::read
             }
 
         }
-        void ProceedInitQueries(TransportSystem& system, const Array& init)
+        void ProceedInitQueries(TransportSystem& system, const Array& init, RouterSetting& rs)
         {
             // Init stops first
             for (const auto& query: init) {
@@ -177,13 +179,39 @@ namespace json::read
             for (const auto& query: init) {
                 init::ProceedInitQuery(system, query.AsDict());
             }
+
+            // Fill transport router
+            request_handler::init::FillTransportRouter(system, rs);
         }
     
 
         namespace process
         {
-            // TODO: Proceed this function (getting document and render it to ostream. ostream to str for saving result)
-           // and integrate with map_renderer 
+            OutRoute ProceedRouteQuery(const RouterSetting& router_setting, const Dict& q)
+            {
+                if (q.at("type"s) != "Route"s) {  // just to make the below code safer
+                    throw std::logic_error("It is not a route query (ProceedRouteQuery)");
+                } 
+
+                OutRoute result;
+                result.id = q.at("id"s).AsInt();
+
+                std::optional<transport_system::OutRouteinfo> route_info = request_handler::process::GetRouteInfo(
+                    router_setting, 
+                    q.at("from").AsString(),
+                    q.at("to").AsString()
+                );
+
+                if (!route_info) 
+                {
+                    result.additional_data = "not found"s;
+                    return result;
+                }
+
+                result.route_info = std::move(route_info);
+                return result;
+            }
+
             OutMap ProceedRenderQuery(const TransportSystem& system, const Dict& q, const MapRendererSettings& settings)
             {
                 if (q.at("type"s) != "Map"s) {  // just to make the below code safer
@@ -252,7 +280,8 @@ namespace json::read
                 return result;
             }
 
-            deque<unique_ptr<OutQuery>> ProceedAfterInitQueries(const TransportSystem& system, const Array& queries, const MapRendererSettings& settings)
+            deque<unique_ptr<OutQuery>> ProceedAfterInitQueries(const TransportSystem& system, const Array& queries, 
+                        const MapRendererSettings& map_settings, const RouterSetting& router_setting)
             {
                 deque<unique_ptr<OutQuery>> result;
 
@@ -265,7 +294,10 @@ namespace json::read
                         result.push_back(move(make_unique<OutStop>(ProceedStopQuery(system, q))));
                     }
                     else if (q.at("type"s) == "Map"s) {
-                        result.push_back(move(make_unique<OutMap>(ProceedRenderQuery(system, q, settings))));
+                        result.push_back(move(make_unique<OutMap>(ProceedRenderQuery(system, q, map_settings))));
+                    }
+                    else if (q.at("type"s) == "Route"s) {
+                        result.push_back(move(make_unique<OutRoute>(ProceedRouteQuery(router_setting, q))));
                     }
                 }
 
@@ -333,6 +365,42 @@ namespace json::read
                             }, os
                         );
                     }
+                    else if (const OutRoute* route_info = dynamic_cast<const OutRoute*>(&query)) {
+                       json::Array arr;
+                       arr.reserve(route_info->route_info->items.size());
+                       
+                       for (const auto item: route_info->route_info->items) {
+                           if (item.wait_item) {
+                                json::Dict dict = {
+                                    { "type"s, json::Node(std::move("Wait"s)) },
+                                    { "stop_name"s, json::Node(std::move(std::string(item.wait_item->stop_name))) },
+                                    { "time"s, json::Node(item.wait_item->time) }
+                                };
+                                arr.push_back(dict);
+                           }
+                           else {
+                                json::Dict dict = {
+                                    { "type"s,       json::Node(std::move("Bus"s))         },
+                                    { "bus"s,        json::Node(std::move(std::string(item.bus_item->bus_name)))       },
+                                    { "span_count"s, json::Node(item.bus_item->span_count) },
+                                    { "time"s,       json::Node(item.bus_item->time)       }
+                                };
+                                arr.push_back(std::move(dict));
+                           }
+                       }
+
+                        json::Print(
+                            json::Document{
+                                json::Builder{}
+                                    .StartDict()
+                                        .Key("request_id"s).Value(query.id)
+                                        .Key("total_time"s).Value(route_info->route_info->total_time)
+                                        .Key("items"s).Value(std::move(arr))
+                                    .EndDict()
+                                .Build()
+                            }, os
+                        );
+                    }
                     // else incorrect type (never)
                 }
             }
@@ -350,10 +418,12 @@ namespace json::read
                 os << "]"sv;
             }
         }
-        void ProceedProcessQueries(const TransportSystem& system, const Array& queries, const MapRendererSettings& settings, std::ostream& os = std::cout)
+        void ProceedProcessQueries(const TransportSystem& system, const Array& queries, 
+                    const MapRendererSettings& map_settings, const RouterSetting& router_settings,
+                    std::ostream& os = std::cout)
         {
-            // Here is two section: processing and interaction with output (cout as defaul)
-            auto answers = process::ProceedAfterInitQueries(system, queries, settings);
+            // Here is two section: processing and interaction with output (cout as default)
+            auto answers = process::ProceedAfterInitQueries(system, queries, map_settings, router_settings);
 
             // Print
             print::ToOstream(answers, os);
@@ -370,12 +440,16 @@ namespace json::read
         const auto& proc_queries = root.at("stat_requests"s).AsArray();
         
         const auto& render_setting = root.at("render_settings"s).AsDict();
-        MapRendererSettings settings = render::InitSettings(render_setting);
+        MapRendererSettings map_render_settings = render::InitMapRendererSettings(render_setting);
 
-        // For test
-        //std::ofstream ofs("../test_output/TestSVGFromCin.svg"s);
+        const auto& routing_settings = root.at("routing_settings").AsDict();
+        RouterSetting router_settings;
+        router_settings.SetSettings(
+            routing_settings.at("bus_wait_time").AsInt(),
+            routing_settings.at("bus_velocity").AsInt()
+        );
 
-        detail::ProceedInitQueries(system, init_queries);
-        detail::ProceedProcessQueries(system, proc_queries, settings, std::cout);
+        detail::ProceedInitQueries(system, init_queries, router_settings);
+        detail::ProceedProcessQueries(system, proc_queries, map_render_settings, router_settings, std::cout);
     }
 }

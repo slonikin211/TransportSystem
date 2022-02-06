@@ -6,7 +6,9 @@ set(SOURCES
     src/main.cpp
 )
 set(HEADERS
-    src/test_rendering.hpp
+    src/graph.h
+    src/ranges.h
+    src/router.h
 )
 # TODO: Generate pairs with prefix src/ using operator for
 set(PAIRS
@@ -19,6 +21,7 @@ set(PAIRS
     src/transport_catalogue.cpp src/transport_catalogue.h
     src/svg.cpp src/svg.h
     src/map_renderer.cpp src/map_renderer.h
+    src/transport_router.cpp src/transport_router.h
 )
 
 add_executable(Task ${SOURCES} ${HEADERS} ${PAIRS})

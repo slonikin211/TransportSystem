@@ -1,6 +1,8 @@
 #pragma once
 
 #include "transport_catalogue.h"
+#include "transport_router.h"
+
 #include "map_renderer.h"
 #include <vector>
 #include <map>
@@ -58,6 +60,11 @@ namespace request_handler
         {
             std::ostringstream os;
         };
+
+        struct OutRoute : OutQuery
+        {
+            std::optional<transport_system::OutRouteinfo> route_info; // VECTOR OF ITEMS: 1. Wait{ type, stop_name, time } 2. Bus{ type, bus, span_count, time } 
+        };
     } // query
 
     namespace init
@@ -65,6 +72,8 @@ namespace request_handler
         void InitStopsConnections(transport_system::TransportSystem& system, const query::InitStop& query);
         void InitStop(transport_system::TransportSystem& system, const query::InitStop& query);
         void InitBus(transport_system::TransportSystem& system, const query::InitBus& query);
+
+        void FillTransportRouter(const transport_system::TransportSystem& system, transport_system::RouterSetting& setting);
     } // init
 
     namespace process
@@ -72,5 +81,8 @@ namespace request_handler
         info::BusInfo GetBusInfo(const transport_system::TransportSystem& system, const request_handler::query::GetInfo& info);
         info::StopInfo GetStopInfo(const transport_system::TransportSystem& system, const request_handler::query::GetInfo& info);
         void GetSVGDocument(const transport_system::TransportSystem& system, const map_renderer::detail::MapRendererSettings& settings, std::ostream& os);
+        
+        std::optional<transport_system::OutRouteinfo> GetRouteInfo(const transport_system::RouterSetting& setting,
+            const std::string_view from, const std::string_view to);
     } // process
 } // request_handler
