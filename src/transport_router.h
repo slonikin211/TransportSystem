@@ -1,6 +1,7 @@
 #pragma once
 
 #include "router.h"
+#include "transport_catalogue.h"
 
 #include <utility>
 #include <vector>
@@ -66,17 +67,28 @@ namespace transport
 			size_t end_wait;
 		};
 
+		struct BusEdgeInfo
+		{
+			std::string_view stop_from; 
+			std::string_view stop_to;
+			std::string_view bus_name; 
+			size_t span_count;
+			double dist;
+		};
+
 	public:
 		Router() = default;
 		explicit Router(const size_t graph_size);
 
 		void SetSettings(const double bus_wait_time, const double bus_velocity);
 		void AddWaitEdge(const std::string_view stop_name);
-		void AddBusEdge(const std::string_view stop_from, const std::string_view stop_to, const std::string_view bus_name, const int span_count, const int dist);
+		void AddBusEdge(const BusEdgeInfo& bus_edge_info);
 		void AddStop(const std::string_view stop_name);
 
 		void BuildGraph();
 		void BuildRouter();
+
+		void FillGraph(const TransportCatalogue& db);
 
 		std::optional<RouteInfo> GetRouteInfo(const std::string_view from, const std::string_view to) const;
 

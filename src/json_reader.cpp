@@ -75,40 +75,7 @@ namespace json_reader
 
 	void JsonReader::FillGraphInRouter() 
     {
-		for (const StopPointer stop : rh_.GetStopsInVector()) 
-        {
-			std::string_view stop_name(*stop.get()->name.get());
-			rh_.AddStopToRouter(stop_name);
-			rh_.AddWaitEdgeToRouter(stop_name);
-		}
-
-		for (const BusPointer bus : rh_.GetBusesInVector()) 
-        {
-			const std::string_view bus_name = *bus->name;
-			for (size_t i = 0u; i < bus->route.size() - 1u; ++i) {
-				const std::string_view stop_name_from = *bus->route[i]->name;
-
-				double prev_actual = 0.0;
-				std::string_view prev_stop_name = stop_name_from;
-
-				for (size_t j = i + 1u; j < bus->route.size(); ++j) 
-                {
-					const std::string_view stop_name_to = *bus->route[j]->name;
-					double actual = *rh_.GetActualDistanceBetweenStops(prev_stop_name, stop_name_to);
-					rh_.AddBusEdgeToRouter(
-						stop_name_from,
-						stop_name_to,
-						bus_name,
-						j - i,
-						prev_actual + actual
-					);
-					prev_stop_name = stop_name_to;
-					prev_actual += actual;
-				}
-			}
-		}
-
-		rh_.BuildRouter();
+		rh_.FillRouter();
 	}
 
 	const json::Dict& JsonReader::FillStop(const json::Dict& stop_req) 

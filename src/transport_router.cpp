@@ -2,6 +2,9 @@
 
 namespace transport 
 {
+	using namespace std;
+	using namespace domain;
+
 	Router::Router(const size_t graph_size) : graph_(graph_size) {}
 
 	void Router::SetSettings(const double bus_wait_time, const double bus_velocity) 
@@ -9,7 +12,7 @@ namespace transport
 		settings_ = { bus_wait_time, bus_velocity };
 	}
 
-	void Router::AddWaitEdge(const std::string_view stop_name) 
+	void Router::AddWaitEdge(const string_view stop_name) 
 	{
 		EdgeInfo new_edge{
 			{
@@ -21,24 +24,24 @@ namespace transport
 			-1,
 			settings_.wait_time
 		};
-		edges_.push_back(std::move(new_edge));
+		edges_.push_back(move(new_edge));
 	}
 
-	void Router::AddBusEdge(const std::string_view stop_from, const std::string_view stop_to, const std::string_view bus_name, const int span_count, const int dist) {
+	void Router::AddBusEdge(const BusEdgeInfo& bus_edge_info) {
 		EdgeInfo new_edge{
 			{
-				stop_to_vertex_id_[stop_from].end_wait,
-				stop_to_vertex_id_[stop_to].start_wait,
-				dist / settings_.velocity * TO_MINUTES
+				stop_to_vertex_id_[bus_edge_info.stop_from].end_wait,
+				stop_to_vertex_id_[bus_edge_info.stop_to].start_wait,
+				bus_edge_info.dist / settings_.velocity * TO_MINUTES
 			},
-			bus_name,
-			span_count,
-			dist / settings_.velocity * TO_MINUTES
+			bus_edge_info.bus_name,
+			(int)bus_edge_info.span_count,
+			bus_edge_info.dist / settings_.velocity * TO_MINUTES
 		};
-		edges_.push_back(std::move(new_edge));
+		edges_.push_back(move(new_edge));
 	}
 
-	void Router::AddStop(const std::string_view stop_name) 
+	void Router::AddStop(const string_view stop_name) 
 	{
 		if (!stop_to_vertex_id_.count(stop_name)) 
 		{
@@ -51,7 +54,7 @@ namespace transport
 	{
 		if (!graph_) 
 		{
-			graph_ = std::move(Graph(stop_to_vertex_id_.size() * 2u));
+			graph_ = move(Graph(stop_to_vertex_id_.size() * 2u));
 		}
 		AddEdgesToGraph();
 	}
@@ -64,14 +67,53 @@ namespace transport
 		}
 	}
 
-	std::optional<RouteInfo> Router::GetRouteInfo(const std::string_view from, const std::string_view to) const {
+	void Router::FillGraph(const TransportCatalogue& db)
+	{
+		for (const StopPointer stop : db.GetStopsInVector()) 
+        {
+			std::string_view stop_name(*stop.get()->name.get());
+			AddStop(stop_name);
+			AddWaitEdge(stop_name);
+		}
+
+		for (const BusPointer bus : db.GetBusesInVector()) 
+        {
+			const std::string_view bus_name = *bus->name;
+			for (size_t i = 0u; i < bus->route.size() - 1u; ++i) {
+				const std::string_view stop_name_from = *bus->route[i]->name;
+
+				double prev_actual = 0.0;
+				std::string_view prev_stop_name = stop_name_from;
+
+				for (size_t j = i + 1u; j < bus->route.size(); ++j) 
+                {
+					const std::string_view stop_name_to = *bus->route[j]->name;
+					optional<double> actual = db.GetActualDistanceBetweenStops(prev_stop_name, stop_name_to);
+					if (actual)
+					{
+						AddBusEdge({
+							stop_name_from,
+							stop_name_to,
+							bus_name,
+							j - i,
+							prev_actual + actual.value()
+						});
+						prev_stop_name = stop_name_to;
+						prev_actual += actual.value();
+					}
+				}
+			}
+		}
+	}
+
+	optional<RouteInfo> Router::GetRouteInfo(const string_view from, const string_view to) const {
 		const auto route = router_->BuildRoute(
 			stop_to_vertex_id_.at(from).start_wait,
 			stop_to_vertex_id_.at(to).start_wait
 		);
 		if (!route) 
 		{
-			return std::nullopt;
+			return nullopt;
 		}
 
 		return RouteInfo{
@@ -88,9 +130,9 @@ namespace transport
 		}
 	}
 
-	std::vector<RouteItem> Router::MakeItemsByEdgeIds(const std::vector<graph::EdgeId>& edge_ids) const 
+	vector<RouteItem> Router::MakeItemsByEdgeIds(const vector<graph::EdgeId>& edge_ids) const 
 	{
-		std::vector<RouteItem> result;
+		vector<RouteItem> result;
 		result.reserve(edge_ids.size());
 
 		for (const auto id : edge_ids) 
@@ -112,7 +154,7 @@ namespace transport
 					edge_info.time
 				};
 			}
-			result.push_back(std::move(tmp));
+			result.push_back(move(tmp));
 		}
 		return result;
 	}

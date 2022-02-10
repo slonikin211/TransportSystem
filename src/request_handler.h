@@ -55,7 +55,8 @@ namespace request_handler
 		void SetRoutingSettings(const double bus_wait_time, const double bus_velocity);
 		void AddStopToRouter(const std::string_view name);
 		void AddWaitEdgeToRouter(const std::string_view stop_name);
-		void AddBusEdgeToRouter(const std::string_view stop_from, const std::string_view stop_to, const std::string_view bus_name, const int span_count, const int dist);
+		void AddBusEdgeToRouter(const std::string_view stop_from, const std::string_view stop_to, const std::string_view bus_name, const size_t span_count, const double dist);
+		void FillRouter();
 		void BuildRouter();
 		std::optional<transport::RouteInfo> GetRouteInfo(const std::string_view from, const std::string_view to) const;
 

@@ -191,9 +191,15 @@ namespace request_handler {
 	}
 
 	void RequestHandler::AddBusEdgeToRouter(const std::string_view stop_from, const std::string_view stop_to, 
-            const std::string_view bus_name, const int span_count, const int dist) 
+            const std::string_view bus_name, const size_t span_count, const double dist) 
     {
-		rt_.AddBusEdge(stop_from, stop_to, bus_name, span_count, dist);
+		rt_.AddBusEdge({stop_from, stop_to, bus_name, span_count, dist});
+	}
+
+	void RequestHandler::FillRouter()
+	{
+		rt_.FillGraph(db_);
+		BuildRouter();
 	}
 
 	void RequestHandler::BuildRouter() 
