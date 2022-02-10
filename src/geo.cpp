@@ -5,7 +5,7 @@ const inline int EarthRadius = 6371000;
 
 inline bool dequal(const double num1, const double num2)
 {
-    return std::fabs(num1 - num2) < 0.0001;
+    return std::fabs(num1 - num2) < 1e-6;
 }
 
 double geo::ComputeDistance(Coordinates from, Coordinates to) 

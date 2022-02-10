@@ -1,53 +1,60 @@
 #pragma once
 
-#include <string>
-#include <deque>
-#include <set>
-
 #include "geo.h"
 
-namespace obj
+#include <string>
+#include <string_view>
+#include <vector>
+#include <unordered_set>
+#include <memory>
+#include <optional>
+
+namespace domain 
 {
-    // Stop structure include stop name and coordinates
-    struct Stop
-    {
-        std::string name;
-        geo::Coordinates coordinates;
-    };
+	struct Bus;
+	using BusPointer = std::shared_ptr<Bus>;
 
-    // Bus structure include bus name and route
-    struct Bus
-    {
-        std::string name;
-        std::deque<const Stop*> route;
-        bool cyclic_route;
-    };
-} // obj 
+	struct Stop;
+	using StopPointer = std::shared_ptr<Stop>;
 
-namespace info
-{
-    // Bus info for output
-    struct BusInfo
+	struct Bus 
     {
-        const obj::Bus* bus;
-        size_t amount_of_stops;
-        size_t amount_of_unique_stops;
-        double route_length;
-        double curvature;
-    };
+		Bus(std::string&& name, std::vector<StopPointer>&& route, int unique, 
+            double actual, double geo, StopPointer last_stop = nullptr);
 
+		Bus& operator=(const Bus& bus) = default;
 
-    // Stop info for output
-    struct StopInfo
+		std::shared_ptr<std::string> name;
+		std::vector<StopPointer> route;
+		int unique_stops = 0;
+		double route_actual_length = 0.0;
+		double route_geographic_length = 0.0;
+		StopPointer last_stop_name;
+	};
+
+	struct Stop 
     {
-        const obj::Stop* stop;
-        std::set<const obj::Bus*> buses;
-    };
+		Stop(std::string&& name, double lat, double lng);
 
-    // Route info from input
-    struct RouteInfo
+		double GetGeographicDistanceTo(StopPointer stop_to) const;
+
+		std::shared_ptr<std::string> name;
+		geo::Coordinates coords = {0.0, 0.0};
+	};
+
+	struct BusInfo 
     {
-        std::string from;
-        std::string to;
-    };
-}   
+		std::string_view name;
+		int stops_on_route = 0;
+		int unique_stops = 0;
+		double routh_actual_length = 0.0;
+		double curvature = 0.0;
+	};
+
+	struct StopInfo 
+    {
+		std::string_view name;
+		const std::unordered_set<BusPointer>* passing_buses;
+	};
+
+}

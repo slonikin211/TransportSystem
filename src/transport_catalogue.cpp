@@ -1,242 +1,111 @@
+#include "geo.h"
 #include "transport_catalogue.h"
 
-#include <algorithm>
-#include <cassert>
-#include <cctype>
-#include <locale>
-#include <iostream>
+#include <utility>
+#include <set>
+#include <cmath>
 
-// Transport System
-using namespace transport_system;
-
-using namespace geo;
-using namespace obj;
-using namespace info;
-
-
-void TransportSystem::AddRoute(const Bus& bus)
+namespace transport 
 {
-    // Init bus
-    all_busses_.push_back(std::move(bus));
-    Bus* bus_ptr = &all_busses_.back();
+	using namespace domain;
 
-    // Link bus to stops
-    for (auto stop: bus_ptr->route)
+	size_t TransportCatalogue::StopsPairHasher::operator()(const StopsPair& stops_pair) const 
     {
-        all_stops_info_[stop].buses.insert(bus_ptr);
-        all_stops_info_[stop].stop = stop;
-    }
+		return {
+			hash_(stops_pair.first.get()) +
+			hash_(stops_pair.second.get()) * 37 * 37
+		};
+	}
 
-    // Add to const bus ptrs
-    p_all_busses_.push_back(bus_ptr);
-}
-
-void TransportSystem::AddStop(const Stop& stop)
-{
-    all_stops_.push_back(std::move(stop));
-
-    const Stop* pstop = &all_stops_.back();
-    all_stops_info_[pstop].stop = pstop;
-
-    // Add to all stops ptrs
-    p_all_stops_.push_back(pstop);
-}
-
-void TransportSystem::AddLinkStops(const std::pair<const Stop*, const Stop*>& connection, const double route)
-{
-    // Add link
-    if (all_stops_connections_.count(connection) == 0u)     // first time to add
+	void TransportCatalogue::AddBus(Bus&& bus) 
     {
-        all_stops_connections_[connection] = route;
-    }
-}
+		buses_.push_back(std::make_shared<Bus>(std::move(bus)));
+		const auto bus_ptr = buses_.back().get();
+		name_to_bus_[*bus_ptr->name.get()] = buses_.back();
 
+		AddToStopPassingBuses(bus_ptr->route, *bus_ptr->name.get());
+	}
 
-const Bus* TransportSystem::FindRouteByBusName(std::string_view name) const
-{
-    auto to_find = std::find_if(all_busses_.begin(), all_busses_.end(),
-        [&](const Bus& bus){
-            return bus.name == name;
-        });
-    
-    // This is so bad to return NULL, need to change this (but how?)
-    return (to_find != all_busses_.end()) ? (&(*to_find)) : (nullptr);
-}
-    
-const Stop* TransportSystem::FindStopByName(std::string_view name) const
-{
-    auto to_find = std::find_if(all_stops_.begin(), all_stops_.end(),
-        [&](const Stop& bus){
-            return bus.name == name;
-        });
-    
-    // This is so bad to return NULL, need to change this
-    return (to_find != all_stops_.end()) ? (&(*to_find)) : (nullptr);
-}
-
-double TransportSystem::FindConnectionValueByStops(const Stop* stop1, const Stop* stop2) const
-{
-    std::pair<const Stop*, const Stop*> key(stop1, stop2);
-    if (all_stops_connections_.count(key) != 0u)
+	void TransportCatalogue::AddStop(Stop&& stop) 
     {
-        return all_stops_connections_.at(key);
-    }
-    else
+		if (name_to_stop_.count(*stop.name.get())) { return; }
+
+		stops_.push_back(std::make_shared<Stop>(std::move(stop)));
+		const auto stop_ptr = stops_.back().get();
+		name_to_stop_[*stop_ptr->name.get()] = stops_.back();
+
+		stops_pair_to_distance_[{ stops_.back(), stops_.back() }] = 0;
+	}
+
+	void TransportCatalogue::SetDistanceBetweenStops(const std::string_view first, const std::string_view second, double distance) 
     {
-        std::pair<const Stop*, const Stop*> key2(stop2, stop1);
-        if (all_stops_connections_.count(key2) != 0u)
+		StopPointer stop_X = FindStop(first);
+		StopPointer stop_To = FindStop(second);
+
+		stops_pair_to_distance_[{stop_X, stop_To}] = distance;
+		StopsPair tmp_pair = { stop_To, stop_X };
+
+		if (stops_pair_to_distance_.count(tmp_pair) == 0u) {
+			stops_pair_to_distance_[move(tmp_pair)] = distance;
+		}
+	}
+
+	BusPointer TransportCatalogue::FindBus(const std::string_view name) const 
+    {
+		return (name_to_bus_.count(name) ? name_to_bus_.at(name) : nullptr);
+	}
+
+	StopPointer TransportCatalogue::FindStop(const std::string_view name) const 
+    {
+		return (name_to_stop_.count(name) ? name_to_stop_.at(name) : nullptr);
+	}
+
+	std::optional<double> TransportCatalogue::GetActualDistanceBetweenStops(const std::string_view stop1_name, const std::string_view stop2_name) const 
+    {
+		StopPointer first_stop = FindStop(stop1_name);
+		StopPointer second_stop = FindStop(stop2_name);
+		if (first_stop.get() == nullptr || second_stop.get() == nullptr) 
         {
-            return all_stops_connections_.at(key2);
-        }
-    }
-    return 0.0;    // not found
-}
+			return {};
+		}
+		const StopsPair tmp_pair = { first_stop, second_stop };
 
+		return (stops_pair_to_distance_.count(tmp_pair) ? stops_pair_to_distance_.at(tmp_pair) : std::optional<double>{});
+	}
 
-double TransportSystem::ComputeGeoRoute(const Bus* bus) const
-{
-    double route_length = 0.0;
-    Coordinates previous = {0.0, 0.0};
-    bool first_stop = true;
-    for (auto it = bus->route.begin(); it  != bus->route.end(); ++it)
+	std::optional<double> TransportCatalogue::GetGeographicDistanceBetweenStops(const std::string_view stop1_name, const std::string_view stop2_name) const 
     {
-        if (!first_stop)    // avoiding first stop
+		StopPointer first_stop = FindStop(stop1_name);
+		StopPointer second_stop = FindStop(stop2_name);
+		if (first_stop == nullptr || second_stop == nullptr) 
         {
-            route_length += ComputeDistance(previous, (*it)->coordinates);
-        }
-        previous = (*it)->coordinates;
-        first_stop = false;
-    }
+			return {};
+		}
 
-    // Just go back if format is Bus X: A1 - A2 - ... - AN
-    if (!bus->cyclic_route)
+		return first_stop->GetGeographicDistanceTo(second_stop);
+	}
+
+	const std::unordered_set<BusPointer>* TransportCatalogue::GetPassingBusesByStop(StopPointer stop) const 
     {
-        std::deque<const Stop*> route_back = {bus->route.begin(), bus->route.end()};
-        first_stop = true;
-        previous = {0.0, 0.0};
-        for (auto it = route_back.rbegin(); it != route_back.rend(); ++it)
+		return ((stop_to_passing_buses_.count(stop)) ? &stop_to_passing_buses_.at(stop) : nullptr);
+	}
+
+	const std::vector<BusPointer> TransportCatalogue::GetBusesInVector() const 
+    {
+		return std::vector<BusPointer>(buses_.begin(), buses_.end());
+	}
+
+	const std::vector<StopPointer> TransportCatalogue::GetStopsInVector() const 
+    {
+		return std::vector<StopPointer>(stops_.begin(), stops_.end());
+	}
+
+	void TransportCatalogue::AddToStopPassingBuses(const std::vector<StopPointer>& stops, const std::string_view bus_name) 
+    {
+		BusPointer bus = FindBus(bus_name);
+		for (size_t i = 0u; i < stops.size(); ++i) 
         {
-            if (!first_stop)    // avoiding first stop
-            {
-                route_length += ComputeDistance(previous, (*it)->coordinates);
-            }
-            previous = (*it)->coordinates;
-            first_stop = false;
-        }
-    }
-    else
-    {
-        // To the first (Format Bus X: A1 > A2 > ... AN => AN > A1)
-        // If AM > AM where M = [1, N] => ComputeDistance returns 0.0
-        route_length += ComputeDistance(previous, (*(bus->route.begin()))->coordinates);
-    }
-    return route_length;
-}
-
-double TransportSystem::ComputeRealRoute(const Bus* bus) const
-{
-    double route_length = 0;
-    const Stop* previous = nullptr;
-    bool first_stop = true;
-    for (auto it = bus->route.begin(); it  != bus->route.end(); ++it)
-    {
-        if (!first_stop)    // avoiding first stop
-        {
-            const double route_val = FindConnectionValueByStops(previous, *it);
-            route_length += route_val;
-        }
-        previous = *it;
-        first_stop = false;
-    }
-
-    // Just go back if format is Bus X: A1 - A2 - ... - AN
-    if (!bus->cyclic_route)
-    {
-        std::deque<const Stop*> route_back = {bus->route.begin(), bus->route.end()};
-        first_stop = true;
-        previous = nullptr;
-        for (auto it = route_back.rbegin(); it != route_back.rend(); ++it)
-        {
-            if (!first_stop)    // avoiding first stop
-            {
-                const double route_val = FindConnectionValueByStops(previous, *it);
-                route_length += route_val;
-            }
-            previous = *it;
-            first_stop = false;
-        }
-    }
-    else
-    {
-        // To the first (Format Bus X: A1 > A2 > ... AN => AN > A1)
-        // If AM > AM where M = [1, N] => 0 or Connection(AM, AM)
-        const Stop* first_stop = *bus->route.begin();
-        const double route_val = FindConnectionValueByStops(previous, first_stop);
-        route_length += route_val;
-    }
-    return route_length;
-}
-
-BusInfo TransportSystem::GetBusInfoByBus(const Bus* bus) const
-{   
-    if (bus == nullptr)     // not found
-    {
-        return {nullptr, 0u, 0u, 0.0, 0.0};
-    }
-    // Find amount of stops
-    size_t amount_of_stops = (!bus->cyclic_route) ? (bus->route.size() * 2u - 1u)
-        : (bus->route.size() + (((*bus).route.front() == (*bus).route.back()) ? (0u) : (1u)));  // Need to check: s1 > s2 == s1 > s2 > s1
-
-    // Count unique stops
-    size_t amount_of_unique_stops;
-
-    std::unordered_set<const Stop*> unique_stops, not_unique_stops;
-    for (const auto stop: bus->route)
-    {
-        if (!unique_stops.count(stop) && !not_unique_stops.count(stop))
-        {
-            unique_stops.insert(stop);
-        }
-        else if (not_unique_stops.count(stop))
-        {
-            not_unique_stops.insert(stop);
-        }
-    }
-    amount_of_unique_stops = unique_stops.size();
-    
-    double geo_route_length = ComputeGeoRoute(bus);     
-    double real_route_length = ComputeRealRoute(bus);
-    
-    // Return info
-    return {bus, amount_of_stops, amount_of_unique_stops, real_route_length, real_route_length / geo_route_length};
-}
-
-StopInfo TransportSystem::GetStopInfoByStop(const Stop* stop) const
-{
-    if (stop == nullptr || !all_stops_info_.count(stop))
-    {
-        return {nullptr, {}};
-    }
-    return all_stops_info_.at(stop);
-}
-
-const std::deque<const obj::Bus*>& TransportSystem::GetBusesPointers() const
-{
-    return p_all_busses_;
-}
-
-const std::deque<const obj::Stop*>& TransportSystem::GetStopPointers() const
-{
-    return p_all_stops_;
-}
-
-const std::deque<StopInfo>& TransportSystem::GetStopInfo() const
-{
-    static std::deque<StopInfo> stop_infos;
-    if (stop_infos.empty()) {
-        for (const auto& el: all_stops_info_) {
-            stop_infos.push_back(el.second);
-        }
-    }
-    return stop_infos;
+			stop_to_passing_buses_[stops[i]].insert(bus);
+		}
+	}
 }

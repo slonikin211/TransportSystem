@@ -1,88 +1,72 @@
 #pragma once
 
 #include "transport_catalogue.h"
+#include "map_renderer.h"
 #include "transport_router.h"
 
-#include "map_renderer.h"
-#include <vector>
-#include <map>
-#include <sstream>
+#include <optional>
+#include <unordered_set>
+#include <tuple>
+#include <string>
+#include <string_view>
+#include <memory>
 
-namespace request_handler
+namespace request_handler 
 {
-    namespace query
-    {
-        ////////////////////////// Init //////////////////////////
+	class RequestHandler 
+	{
+	private:
+		enum class SeparatorType 
+		{
+			DASH,
+			GREATER_THAN,
+			NO_HAVE
+		};
 
-        struct InitStop
-        {
-            std::string name;
-            geo::Coordinates coords;
-            std::map<std::string, double> road_distances;
-        };
-        struct InitBus
-        {
-            std::string name;
-            std::vector<std::string> stops;
-            bool is_roundtrip;
-        };
-    
-        ////////////////////////// Process //////////////////////////
-        
-        struct GetInfo
-        {
-            int id;
-            std::string type, name;
-        };
+	public:
+		RequestHandler(transport::TransportCatalogue& db, renderer::MapRenderer& mr);
 
-        ////////////////////////// Result (output) //////////////////////////
+		void AddBus(const std::string_view raw_query);
+		void AddBus(domain::Bus&& bus);
+		void AddStop(const std::string_view raw_query);
+		void AddStop(domain::Stop&& stop);
 
-        struct OutQuery
-        {
-            int id;
-            std::string additional_data;   // if bus/stop is not found or something else as an example for usage
-            virtual ~OutQuery() = default;
-        };
-        
-        struct OutBus : OutQuery
-        {
-            double curvature;
-            double route_length;
-            int stop_count, unique_stop_count;
-        };
+		void SetDistanceBetweenStops(const std::string_view raw_query);
+		void SetDistanceBetweenStops(const std::string_view first, const std::string_view second, double distance);
 
-        struct OutStop : OutQuery
-        {
-            std::set<std::string> buses;
-        };
+		domain::BusPointer FindBus(const std::string_view name) const;
+		domain::StopPointer FindStop(const std::string_view name) const;
 
-        struct OutMap : OutQuery
-        {
-            std::ostringstream os;
-        };
+		const std::vector<domain::BusPointer> GetBusesInVector() const;
+		const std::vector<domain::StopPointer> GetStopsInVector() const;
 
-        struct OutRoute : OutQuery
-        {
-            std::optional<transport_system::OutRouteinfo> route_info; // VECTOR OF ITEMS: 1. Wait{ type, stop_name, time } 2. Bus{ type, bus, span_count, time } 
-        };
-    } // query
+		std::optional<domain::BusInfo> GetBusInfo(const std::string_view bus_name) const;
+		std::optional<domain::StopInfo> GetStopInfo(const std::string_view stop_name) const;
 
-    namespace init
-    {
-        void InitStopsConnections(transport_system::TransportSystem& system, const query::InitStop& query);
-        void InitStop(transport_system::TransportSystem& system, const query::InitStop& query);
-        void InitBus(transport_system::TransportSystem& system, const query::InitBus& query);
+		const std::unordered_set<domain::BusPointer>* GetBusesByStop(const std::string_view stop_name) const;
+		std::tuple<double, int> ComputeRouteLengths(const std::vector<std::string_view>& routh) const;
+		std::vector<domain::StopPointer> StopsToStopPointer(const std::vector<std::string_view>& stops) const;
 
-        void FillTransportRouter(const transport_system::TransportSystem& system, transport_system::RouterSetting& setting);
-    } // init
+		std::optional<double> GetActualDistanceBetweenStops(const std::string_view stop1_name, const std::string_view stop2_name) const;
 
-    namespace process
-    {
-        info::BusInfo GetBusInfo(const transport_system::TransportSystem& system, const request_handler::query::GetInfo& info);
-        info::StopInfo GetStopInfo(const transport_system::TransportSystem& system, const request_handler::query::GetInfo& info);
-        void GetSVGDocument(const transport_system::TransportSystem& system, const map_renderer::detail::MapRendererSettings& settings, std::ostream& os);
-        
-        std::optional<transport_system::OutRouteinfo> GetRouteInfo(const transport_system::RouterSetting& setting,
-            const std::string_view from, const std::string_view to);
-    } // process
-} // request_handler
+		svg::Document RenderMap() const;
+		void SetRenderSettings(renderer::RenderingSettings&& settings);
+
+		void SetRoutingSettings(const double bus_wait_time, const double bus_velocity);
+		void AddStopToRouter(const std::string_view name);
+		void AddWaitEdgeToRouter(const std::string_view stop_name);
+		void AddBusEdgeToRouter(const std::string_view stop_from, const std::string_view stop_to, const std::string_view bus_name, const int span_count, const int dist);
+		void BuildRouter();
+		std::optional<transport::RouteInfo> GetRouteInfo(const std::string_view from, const std::string_view to) const;
+
+	private:
+		transport::TransportCatalogue& db_;
+		renderer::MapRenderer& mr_;
+		transport::Router rt_;
+
+		std::tuple<std::string, std::size_t> QueryGetName(const std::string_view str) const;
+		std::tuple<std::string, std::string> SplitIntoLengthStop(std::string&& str) const;
+		std::tuple<std::vector<std::string>, SeparatorType> SplitIntoWordsBySeparator(const std::string_view str) const;
+		std::tuple<std::vector<std::string_view>, int> WordsToRoute(const std::vector<std::string>& words, SeparatorType separator) const;
+	};
+}

@@ -3,71 +3,134 @@
 #include "svg.h"
 #include "domain.h"
 #include "geo.h"
-#include <utility>
+
 #include <vector>
-#include <string>
-#include <deque>
 #include <memory>
-#include <iostream>
+#include <algorithm>
+#include <optional>
+#include <cmath>
+#include <utility>
+#include <cstdlib>
 
-// For test
-using namespace std::string_literals;
-
-namespace map_renderer
+namespace renderer 
 {
-    class SphereProjector;
-    namespace detail
+	class SphereProjector 
     {
-        struct MapRendererSettings
+	public:
+		template <typename PointInputIt>
+		SphereProjector(PointInputIt points_begin, PointInputIt points_end, double max_width, double max_height, double padding) : padding_(padding) 
         {
-            double width, height, padding, line_width, stop_radius;
-            int stop_label_font_size, bus_label_font_size;
-            svg::Point stop_label_offset, bus_label_offset;
-            
-            svg::Color underlayer_color;
-            double underlayer_width;
-            std::vector<svg::Color> color_palette;
-        };
+			if (points_begin == points_end) { return; }
 
-        class TransportMap
+			const auto [left_it, right_it] = std::minmax_element(
+				points_begin,
+				points_end,
+				[](auto lhs, auto rhs) {
+					return lhs.lng < rhs.lng;
+				}
+			);
+			min_lon_ = left_it->lng;
+			const double max_lon = right_it->lng;
+
+			const auto [bottom_it, top_it] = std::minmax_element(
+				points_begin,
+				points_end,
+				[](auto lhs, auto rhs) {
+					return lhs.lat < rhs.lat;
+				}
+			);
+			const double min_lat = bottom_it->lat;
+			max_lat_ = top_it->lat;
+
+			std::optional<double> width_zoom;
+			if (!IsZero(max_lon - min_lon_)) 
+            {
+				width_zoom = (max_width - 2.0 * padding) / (max_lon - min_lon_);
+			}
+
+			std::optional<double> height_zoom;
+			if (!IsZero(max_lat_ - min_lat)) 
+            {
+				height_zoom = (max_height - 2.0 * padding) / (max_lat_ - min_lat);
+			}
+
+			if (width_zoom && height_zoom) 
+            {
+				zoom_coeff_ = std::min(*width_zoom, *height_zoom);
+			}
+			else if (width_zoom) 
+            {
+				zoom_coeff_ = *width_zoom;
+			}
+			else if (height_zoom) 
+            {
+				zoom_coeff_ = *height_zoom;
+			}
+		}
+
+		svg::Point operator()(geo::Coordinates coords) const;
+
+	private:
+		double padding_ = 0.0;
+		double min_lon_ = 0.0;
+		double max_lat_ = 0.0;
+		double zoom_coeff_ = 0.0;
+
+		constexpr static const double EPSILON = 1e-6;
+		static bool IsZero(double value)
         {
-        public:
-            TransportMap(const std::deque<const obj::Bus*>& buses, const std::deque<info::StopInfo>& stops_info,
-                const MapRendererSettings& settings, const map_renderer::SphereProjector& projector);
-            void ProcessDrawing();
-            void GetSVGDocument(svg::Document& doc);
+			return std::abs(value) < EPSILON;
+		}
+	};
 
-        private:
-            struct Route {
-                svg::Color color;
-                svg::Polyline route_line;
-                std::deque<svg::Text> route_texts;
-                static size_t current_color;
-            };
-            std::deque<Route> routes_;
-            std::deque<std::unique_ptr<svg::Object>> to_draw_;
+	struct RenderingSettings {
+		double width = 0;
+		double height = 0;
+		double padding = 0;
+		double line_width = 0;
+		double stop_radius = 0;
 
-        private:
-            // Render section. Just adds Objects to do_draw_
-            void RenderRoutes();
-            void RenderStops();
+		int bus_label_font_size = 0;
+		svg::Point bus_label_offset;
 
-            void RenderPolyline(Route& route, const obj::Bus* bus);
-            void RenderText(Route& route, const obj::Bus* bus);
-            svg::Circle RenderStopCirlcle(const obj::Stop* stop);
-            std::pair<svg::Text, svg::Text> RenderStopName(const obj::Stop* stop);
-        
-            // Help functions
-            std::pair<svg::Text, svg::Text> GetStopNameText(const obj::Bus* bus, const obj::Stop* stop, const svg::Color& color);  
-        private:
-            const std::deque<const obj::Bus*>& buses_;
-            const std::deque<info::StopInfo>& stops_info_;
-            const MapRendererSettings& settings_;
-            const map_renderer::SphereProjector& projector_;
-        };
-    }
+		int stop_label_font_size = 0;
+		svg::Point stop_label_offset;
 
-    void PrintSVGMap(const std::deque<const obj::Bus*>& buses,
-        std::ostream& out, const std::deque<info::StopInfo>& stops_info,
-        const map_renderer::detail::MapRendererSettings& settings);
-} // map_renderer
+		svg::Color underlayer_color;
+		double underlayer_width = 0;
+
+		std::vector<svg::Color> color_palette;
+	};
+
+	class MapRenderer {
+	public:
+		MapRenderer() = default;
+		MapRenderer(RenderingSettings&& settings);
+
+		void SetSettings(RenderingSettings&& settings);
+		svg::Document MakeDocument(std::vector<domain::BusPointer>&& buses, std::vector<std::pair<domain::StopPointer, domain::StopInfo>>&& stops) const;
+
+	private:
+		RenderingSettings settings_;
+
+		template <typename It>
+		std::vector<geo::Coordinates> StopsToCoordinates(It begin, It end) const 
+        {
+			std::vector<geo::Coordinates> result;
+			result.reserve(end - begin);
+			for (It it = begin; it != end; ++it) 
+            {
+				if (it->second.passing_buses != nullptr && !it->second.passing_buses->empty()) 
+                {
+					result.emplace_back(geo::Coordinates{ it->first.get()->coords.lat, it->first.get()->coords.lng });
+				}
+			}
+			return result;
+		}
+
+		void AddBusesLines(svg::Document& doc, SphereProjector& proj, const std::vector<domain::BusPointer>& buses) const;
+		void AddBusesNames(svg::Document& doc, SphereProjector& proj, const std::vector<domain::BusPointer>& buses) const;
+		void AddStopsCircles(svg::Document& doc, SphereProjector& proj, const std::vector<std::pair<domain::StopPointer, domain::StopInfo>>& stops) const;
+		void AddStopsNames(svg::Document& doc, SphereProjector& proj, const std::vector<std::pair<domain::StopPointer, domain::StopInfo>>& stops) const;
+	};
+}

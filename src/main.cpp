@@ -1,18 +1,19 @@
-#define INPUT_FROM_CIN_JSON
-
-#include "transport_catalogue.h"
-#include "request_handler.h"
 #include "json_reader.h"
 #include "map_renderer.h"
+#include "svg.h"
+#include "request_handler.h"
 
-int main()
+#include <iostream>
+
+using namespace std::literals;
+
+int main() 
 {
-    using namespace transport_system;
+	renderer::MapRenderer mr;
+	transport::TransportCatalogue db;
 
-#ifdef INPUT_FROM_CIN_JSON
-    TransportSystem system;
-    json::read::ReadJsonFromCin(system);
-#endif  // INPUT_FROM_CIN_JSON
+	request_handler::RequestHandler rh(db, mr);
+	json_reader::JsonReader js_reader(rh);
 
-    return 0;
+	js_reader.Start(std::cin, std::cout);
 }

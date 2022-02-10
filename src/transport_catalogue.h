@@ -1,75 +1,59 @@
 #pragma once
 
-#include <string>
-#include <string_view>
-#include <unordered_set>
-#include <unordered_map>
-#include <deque>
-#include <set>
-
 #include "domain.h"
 
+#include <string>
+#include <vector>
+#include <string_view>
+#include <deque>
+#include <unordered_map>
+#include <unordered_set>
+#include <tuple>
+#include <optional>
+#include <memory>
 
-namespace transport_system
+namespace transport 
 {
-    namespace detail
-    {    
-        // Hasher for connection
-        class ConnectionHasher
-        {
-        public:
-            template <class T1, class T2>
-            size_t operator()(const std::pair<T1, T2>& pair) const
-            {
-                auto h1 = std::hash<T1>{}(pair.first);
-                auto h2 = std::hash<T2>{}(pair.second);
 
-                return h1 + h2 * 37u;
-            }
-        private:
-            std::hash<void*> c_hasher_;
-        };
-    }
-
-    // Transport system class which includes next functionality
-    // 1. Add route to DB
-    // 2. Add stop to DB
-    // 3. Find route by name
-    // 4. Find stop by name
-    // 5. Get information about route
-
-    class TransportSystem
+	class TransportCatalogue 
     {
-    public:
-        void AddRoute(const obj::Bus& bus);
-        void AddStop(const obj::Stop& stop);
-        void AddLinkStops(const std::pair<const obj::Stop*, const obj::Stop*>& connection, const double route);
+	private:
+		using StopsPair = std::pair<domain::StopPointer, domain::StopPointer>;
 
-        const obj::Bus* FindRouteByBusName(std::string_view name) const;
-        const obj::Stop* FindStopByName(std::string_view name) const;
-        double FindConnectionValueByStops(const obj::Stop* stop1, const obj::Stop* stop2) const;
+		class StopsPairHasher 
+        {
+		public:
+			std::size_t operator()(const StopsPair& stops_pair) const;
 
-        info::BusInfo GetBusInfoByBus(const obj::Bus* bus) const;
-        info::StopInfo GetStopInfoByStop(const obj::Stop* stop) const;
+		private:
+			std::hash<const void*> hash_;
+		};
 
-        // Mainly for SVG printing info
-        const std::deque<const obj::Bus*>& GetBusesPointers() const;
-        const std::deque<const obj::Stop*>& GetStopPointers() const;
-        const std::deque<info::StopInfo>& GetStopInfo() const;
+	public:
+		void AddBus(domain::Bus&& bus);
+		void AddStop(domain::Stop&& stop);
+		void SetDistanceBetweenStops(const std::string_view first, const std::string_view second, double distance);
 
-    private:
-        double ComputeGeoRoute(const obj::Bus* bus) const;
-        double ComputeRealRoute(const obj::Bus* bus) const;
+		domain::BusPointer FindBus(const std::string_view name)  const;
+		domain::StopPointer FindStop(const std::string_view name) const;
 
-    private:
-        std::deque<obj::Bus> all_busses_;
-        std::deque<const obj::Bus*> p_all_busses_;
+		std::optional<double> GetActualDistanceBetweenStops(const std::string_view stop1_name, const std::string_view stop2_name) const;
+		std::optional<double> GetGeographicDistanceBetweenStops(const std::string_view stop1_name, const std::string_view stop2_name) const;
+		
+        const std::unordered_set<domain::BusPointer>* GetPassingBusesByStop(domain::StopPointer stop) const;
+		const std::vector<domain::BusPointer> GetBusesInVector() const;
+		const std::vector<domain::StopPointer> GetStopsInVector() const;
 
-        std::deque<obj::Stop> all_stops_;
-        std::deque<const obj::Stop*> p_all_stops_;
-        std::unordered_map<const obj::Stop*, info::StopInfo> all_stops_info_;
+	private:
+		std::deque<std::shared_ptr<domain::Stop>> stops_;
+		std::deque<std::shared_ptr<domain::Bus>> buses_;
 
-        std::unordered_map<std::pair<const obj::Stop*, const obj::Stop*>, double, detail::ConnectionHasher> all_stops_connections_;
-    };
+		std::unordered_map<std::string_view, domain::BusPointer, std::hash<std::string_view>> name_to_bus_;
+		std::unordered_map<std::string_view, domain::StopPointer, std::hash<std::string_view>> name_to_stop_;
 
+		std::unordered_map<StopsPair, int, StopsPairHasher> stops_pair_to_distance_;
+		std::unordered_map<domain::StopPointer, std::unordered_set<domain::BusPointer>, std::hash<domain::StopPointer>> stop_to_passing_buses_;
+
+		void AddToStopPassingBuses(const std::vector<domain::StopPointer>& stops, const std::string_view bus_name);
+	};
 }
