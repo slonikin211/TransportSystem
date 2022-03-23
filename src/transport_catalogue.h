@@ -43,6 +43,7 @@ namespace transport
         const std::unordered_set<domain::BusPointer>* GetPassingBusesByStop(domain::StopPointer stop) const;
 		const std::vector<domain::BusPointer> GetBusesInVector() const;
 		const std::vector<domain::StopPointer> GetStopsInVector() const;
+		const std::unordered_map<StopsPair, int, StopsPairHasher> GetStopPairsToDistance() const;
 
 	private:
 		std::deque<std::shared_ptr<domain::Stop>> stops_;

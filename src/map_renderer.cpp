@@ -21,6 +21,11 @@ namespace renderer {
 		settings_ = std::move(settings);
 	}
 
+	const RenderingSettings& MapRenderer::GetRenderSettings() const
+	{
+		return settings_;
+	}
+
 	svg::Document MapRenderer::MakeDocument(std::vector<BusPointer>&& buses, std::vector<std::pair<StopPointer, StopInfo>>&& stops) const 
     {
 		svg::Document result;

@@ -3,6 +3,7 @@
 #include "transport_catalogue.h"
 #include "map_renderer.h"
 #include "transport_router.h"
+#include "serialization.h"
 
 #include <optional>
 #include <unordered_set>
@@ -60,10 +61,14 @@ namespace request_handler
 		void BuildRouter();
 		std::optional<transport::RouteInfo> GetRouteInfo(const std::string_view from, const std::string_view to) const;
 
+		void SetSerializationSettings(const std::string& filename);
+		void Serialize();
+		void Deserialize();
 	private:
 		transport::TransportCatalogue& db_;
 		renderer::MapRenderer& mr_;
 		transport::Router rt_;
+		serialize::Serializer sz_;
 
 		std::tuple<std::string, std::size_t> QueryGetName(const std::string_view str) const;
 		std::tuple<std::string, std::string> SplitIntoLengthStop(std::string&& str) const;

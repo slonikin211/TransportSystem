@@ -100,6 +100,11 @@ namespace transport
 		return std::vector<StopPointer>(stops_.begin(), stops_.end());
 	}
 
+	const std::unordered_map<TransportCatalogue::StopsPair, int, TransportCatalogue::StopsPairHasher> TransportCatalogue::GetStopPairsToDistance() const
+	{
+		return std::unordered_map<StopsPair, int, StopsPairHasher>(stops_pair_to_distance_.begin(), stops_pair_to_distance_.end());
+	}
+
 	void TransportCatalogue::AddToStopPassingBuses(const std::vector<StopPointer>& stops, const std::string_view bus_name) 
     {
 		BusPointer bus = FindBus(bus_name);

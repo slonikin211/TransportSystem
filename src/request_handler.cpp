@@ -8,7 +8,7 @@
 namespace request_handler {
 	using namespace domain;
 
-	RequestHandler::RequestHandler(transport::TransportCatalogue& db, renderer::MapRenderer& mr) : db_(db), mr_(mr) {}
+	RequestHandler::RequestHandler(transport::TransportCatalogue& db, renderer::MapRenderer& mr) : db_(db), mr_(mr), sz_(db, mr) {}
 
 	void RequestHandler::AddBus(const std::string_view raw_query) 
     {
@@ -121,7 +121,7 @@ namespace request_handler {
 	std::tuple<double, int> RequestHandler::ComputeRouteLengths(const std::vector<std::string_view>& route) const 
     {
 		double geographic = 0.0;
-		double actual = 0.0;
+		int actual = 0;
 
 		auto prev_stop = &route[0u];
 		size_t route_sz = route.size();
@@ -137,7 +137,7 @@ namespace request_handler {
 			prev_stop = cur_stop;
 		}
 
-		return std::tuple<double, double>(geographic, actual);
+		return std::tuple<double, int>(geographic, actual);
 	}
 
 	std::vector<StopPointer> RequestHandler::StopsToStopPointer(const std::vector<std::string_view>& stops) const 
@@ -212,6 +212,21 @@ namespace request_handler {
         const std::string_view from, const std::string_view to) const 
     {
 		return rt_.GetRouteInfo(from, to);
+	}
+
+	void RequestHandler::SetSerializationSettings(const std::string& filename) 
+	{
+		sz_.SetFileName(filename);
+	}
+
+	void RequestHandler::Serialize()
+	{
+		sz_.Serialize();
+	}
+
+	void RequestHandler::Deserialize()
+	{
+		sz_.Deserialize();
 	}
 
 	std::tuple<std::string, size_t> RequestHandler::QueryGetName(const std::string_view str) const 

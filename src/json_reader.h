@@ -23,6 +23,8 @@ namespace json_reader
 		JsonReader(request_handler::RequestHandler& req_handler);
 		void Start(std::istream& input, std::ostream& out);
 
+		void MakeBase(std::istream& input);
+		void ProcessRequests(std::istream& input, std::ostream& out);
 	private:
 		request_handler::RequestHandler& rh_;
 

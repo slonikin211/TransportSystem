@@ -110,6 +110,7 @@ namespace renderer
 		void SetSettings(RenderingSettings&& settings);
 		svg::Document MakeDocument(std::vector<domain::BusPointer>&& buses, std::vector<std::pair<domain::StopPointer, domain::StopInfo>>&& stops) const;
 
+		const RenderingSettings& GetRenderSettings() const;
 	private:
 		RenderingSettings settings_;
 

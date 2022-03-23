@@ -20,14 +20,14 @@ namespace domain
 	struct Bus 
     {
 		Bus(std::string&& name, std::vector<StopPointer>&& route, int unique, 
-            double actual, double geo, StopPointer last_stop = nullptr);
+            int actual, double geo, StopPointer last_stop = nullptr);
 
 		Bus& operator=(const Bus& bus) = default;
 
 		std::shared_ptr<std::string> name;
 		std::vector<StopPointer> route;
 		int unique_stops = 0;
-		double route_actual_length = 0.0;
+		int route_actual_length = 0;
 		double route_geographic_length = 0.0;
 		StopPointer last_stop_name;
 	};
@@ -47,7 +47,7 @@ namespace domain
 		std::string_view name;
 		int stops_on_route = 0;
 		int unique_stops = 0;
-		double routh_actual_length = 0.0;
+		int routh_actual_length = 0;
 		double curvature = 0.0;
 	};
 

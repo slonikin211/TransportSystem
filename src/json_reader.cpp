@@ -41,6 +41,50 @@ namespace json_reader
 		}
 	}
 
+	void JsonReader::MakeBase(std::istream& input)
+	{
+		const json::Document doc = json::Load(input);
+		const json::Node& node = doc.GetRoot();
+		const json::Dict& dict = node.AsDict();
+
+		if (dict.count("routing_settings"s)) 
+        {
+			const auto [wait, vel] = ReadRoutingSettings(dict.at("routing_settings"s).AsDict());
+			rh_.SetRoutingSettings(wait, vel);
+		}
+		if (dict.count("base_requests"s)) 
+        {
+			FillTransportCatalogue(dict);
+			FillGraphInRouter();
+		}
+		if (dict.count("render_settings"s)) 
+        {
+			rh_.SetRenderSettings(std::move(ReadRenderingSettings(dict)));
+		}
+		if (dict.count("serialization_settings"s)) 
+        {
+			rh_.SetSerializationSettings(dict.at("serialization_settings"s).AsDict().at("file").AsString());
+			rh_.Serialize();
+		}
+	}
+
+	void JsonReader::ProcessRequests(std::istream& input, std::ostream& out)
+	{
+		const json::Document doc = json::Load(input);
+		const json::Node& node = doc.GetRoot();
+		const json::Dict& dict = node.AsDict();
+
+		if (dict.count("serialization_settings"s)) 
+        {
+			rh_.SetSerializationSettings(dict.at("serialization_settings"s).AsDict().at("file").AsString());
+			rh_.Deserialize();
+		}
+		if (dict.count("stat_requests"s)) 
+        {
+			AnswerStatRequests(dict, out);
+		}
+	}
+
 	void JsonReader::FillTransportCatalogue(const json::Dict& dict) 
     {
 		const json::Array& base_requests = dict.at("base_requests"s).AsArray();

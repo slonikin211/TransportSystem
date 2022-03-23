@@ -5,7 +5,7 @@
 namespace domain 
 {
 	Bus::Bus(std::string&& name, std::vector<StopPointer>&& route, int unique, 
-            double actual, double geo, StopPointer last_stop) : 
+            int actual, double geo, StopPointer last_stop) : 
         name(std::make_shared<std::string>(std::move(name))), 
         route(std::vector<StopPointer>(std::move(route))), 
         unique_stops(unique),
