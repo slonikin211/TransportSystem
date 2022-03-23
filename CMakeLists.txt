@@ -5,7 +5,7 @@ project(TransportSystem)
 find_package(Protobuf REQUIRED)
 find_package(Threads REQUIRED)
 
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS src/svg.proto src/map_renderer.proto src/transport_catalogue.proto)
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS src/transport_router.proto src/svg.proto src/map_renderer.proto src/transport_catalogue.proto)
 
 set(SOURCES 
     src/main.cpp

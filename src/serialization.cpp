@@ -39,6 +39,7 @@ void Serializer::Serialize()
     SerializeBus();
     SerializeDistance();
     SerializeRenderSettings();
+    SerializeRoutingSettings();
 
     transport_catalogue_serialize_.SerializeToOstream(&ofs);
 }
@@ -56,11 +57,19 @@ void Serializer::Deserialize()
     DeserializeStop();
     DeserializeDistance();
     DeserializeBus();
+
+    // Router
+    DeserializeRoutingSettings();
 }
 
 void Serializer::SetFileName(const std::string& filename)
 {
     filename_ = filename;
+}
+
+void Serializer::SetTransportRouter(transport::Router& transport_router)
+{
+    transport_router_ = &transport_router;
 }
 
 // Serialize objs
@@ -156,6 +165,17 @@ void Serializer::SerializeRenderSettings()
     *transport_catalogue_serialize_.mutable_render_settings() = render_settings_pb;
 }
 
+void Serializer::SerializeRoutingSettings()
+{
+    transport_catalogue_serialize::RoutingSettings routing_settings_pb;
+    auto routing_settings = transport_router_.value()->GetRouterSettings();
+
+    routing_settings_pb.set_bus_velocity(routing_settings.velocity);
+    routing_settings_pb.set_bus_wait_time(routing_settings.wait_time);
+
+    *transport_catalogue_serialize_.mutable_routing_settings() = routing_settings_pb;
+}
+
 transport_catalogue_serialize::Color Serializer::SerializeColor(const svg::Color& color)
 {
     transport_catalogue_serialize::Color color_pb;
@@ -230,7 +250,7 @@ void Serializer::DeserializeBus()
         }
         
         auto [geographic, actual] = ComputeRouteLengths(transport_catalogue_, route_names);
-        
+
         domain::Bus bus(
             move(string(bus_pb.name())),
             move(route),
@@ -278,6 +298,16 @@ void Serializer::DeserializeRenderSettings()
         render_settings.color_palette.push_back(DeserializeColor(color_pb));
     }
     map_renderer_.SetSettings(move(render_settings));
+}
+
+void Serializer::DeserializeRoutingSettings()
+{
+    auto routing_settings_pb = transport_catalogue_serialize_.routing_settings();
+    transport_router_.value()->SetSettings(routing_settings_pb.bus_wait_time(), routing_settings_pb.bus_velocity());
+
+    transport_router_.value()->FillGraph(transport_catalogue_);
+    transport_router_.value()->BuildGraph();
+    transport_router_.value()->BuildRouter();
 }
 
 svg::Color Serializer::DeserializeColor(const transport_catalogue_serialize::Color& color_pb)

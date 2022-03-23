@@ -8,7 +8,10 @@
 namespace request_handler {
 	using namespace domain;
 
-	RequestHandler::RequestHandler(transport::TransportCatalogue& db, renderer::MapRenderer& mr) : db_(db), mr_(mr), sz_(db, mr) {}
+	RequestHandler::RequestHandler(transport::TransportCatalogue& db, renderer::MapRenderer& mr) : db_(db), mr_(mr), sz_(db, mr) 
+	{
+		sz_.SetTransportRouter(rt_);
+	}
 
 	void RequestHandler::AddBus(Bus&& bus) 
     {

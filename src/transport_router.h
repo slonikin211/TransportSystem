@@ -49,17 +49,18 @@ namespace transport
 
 	class Router 
     {
-	private:
-		static constexpr double TO_MINUTES = (3.6 / 60.0);
-
-		using Graph = graph::DirectedWeightedGraph<double>;
-		using RouterG = graph::TransportRouter<double>;
-
+	public:
 		struct Settings 
         {
 			double wait_time = 6.0;
 			double velocity = 40.0;
 		};
+
+	private:
+		static constexpr double TO_MINUTES = (3.6 / 60.0);
+
+		using Graph = graph::DirectedWeightedGraph<double>;
+		using RouterG = graph::TransportRouter<double>;
 
 		struct Vertexes 
         {
@@ -81,6 +82,7 @@ namespace transport
 		explicit Router(const size_t graph_size);
 
 		void SetSettings(const double bus_wait_time, const double bus_velocity);
+		const Settings& GetRouterSettings();
 		void AddWaitEdge(const std::string_view stop_name);
 		void AddBusEdge(const BusEdgeInfo& bus_edge_info);
 		void AddStop(const std::string_view stop_name);

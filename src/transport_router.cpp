@@ -12,6 +12,11 @@ namespace transport
 		settings_ = { bus_wait_time, bus_velocity };
 	}
 
+	const Router::Settings& Router::GetRouterSettings()
+	{
+		return settings_;
+	}
+
 	void Router::AddWaitEdge(const string_view stop_name) 
 	{
 		EdgeInfo new_edge{
