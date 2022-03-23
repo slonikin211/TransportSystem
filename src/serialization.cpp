@@ -49,13 +49,13 @@ void Serializer::Deserialize()
 
     transport_catalogue_serialize_.ParseFromIstream(&ifs);
 
+    // MapRender
+    DeserializeRenderSettings();
+
     // TransportCatalogue
     DeserializeStop();
     DeserializeDistance();
     DeserializeBus();
-
-    // MapRender
-    DeserializeRenderSettings();
 }
 
 void Serializer::SetFileName(const std::string& filename)
@@ -87,8 +87,7 @@ void Serializer::SerializeBus()
     {
         transport_catalogue_serialize::Bus bus_pb;
         bus_pb.set_name(*(bus->name));
-
-        *bus_pb.mutable_last_stop() = (bus->last_stop_name == nullptr) ? ("") : (*(bus->last_stop_name->name));
+        bus_pb.set_roundtrip(bus->roundtrip);
         
         for (const auto stop: bus->route)
         {
@@ -102,6 +101,10 @@ void Serializer::SerializeBus()
             *stop_pb.mutable_coordinates() = coordinates_pb;
             *bus_pb.add_stops() = stop_pb;
         }
+
+        string last_stop = (bus->last_stop != nullptr) ? (*(bus->last_stop->name)) : ("");
+        bus_pb.set_laststop(last_stop);
+
         *transport_catalogue_serialize_.add_buses() = bus_pb;
     }
 }
@@ -226,16 +229,16 @@ void Serializer::DeserializeBus()
             unique_stops.emplace(stop_pb.name());
         }
         
-        domain::StopPointer last_stop = (bus_pb.last_stop() == "") ? (nullptr) : (route.back());
-
         auto [geographic, actual] = ComputeRouteLengths(transport_catalogue_, route_names);
+        
         domain::Bus bus(
             move(string(bus_pb.name())),
             move(route),
             unique_stops.size(),
             actual,
             geographic,
-            last_stop
+            bus_pb.roundtrip(),
+            transport_catalogue_.FindStop(bus_pb.laststop())
         );
 
         transport_catalogue_.AddBus(move(bus));

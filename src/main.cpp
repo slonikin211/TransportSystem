@@ -11,18 +11,18 @@ void PrintUsage(std::ostream& stream = std::cerr) {
 }
 
 int main(int argc, char* argv[]) {
-    // if (argc != 2) {
-    //     PrintUsage();
-    //     return 1;
-    // }
+    if (argc != 2) {
+        PrintUsage();
+        return 1;
+    }
 
 	renderer::MapRenderer mr;
 	transport::TransportCatalogue db;
 	request_handler::RequestHandler rh(db, mr);
 	json_reader::JsonReader js_reader(rh);
 
-    // const std::string_view mode(argv[1]);
-    const std::string_view mode = "process_requests"sv;
+    const std::string_view mode(argv[1]);
+    // const std::string_view mode = "process_requests"sv;
     if (mode == "make_base"sv) {
         js_reader.MakeBase(std::cin);
     } else if (mode == "process_requests"sv) {

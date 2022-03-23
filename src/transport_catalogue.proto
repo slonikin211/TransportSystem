@@ -21,6 +21,7 @@ message Bus
     bytes name = 1;
     repeated Stop stops = 2;
     bool roundtrip = 3;
+    bytes laststop = 4;
 }
 
 message Distance

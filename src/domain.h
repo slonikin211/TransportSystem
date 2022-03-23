@@ -20,7 +20,7 @@ namespace domain
 	struct Bus 
     {
 		Bus(std::string&& name, std::vector<StopPointer>&& route, int unique, 
-            int actual, double geo, StopPointer last_stop = nullptr);
+            int actual, double geo, bool roundtrip, StopPointer last_stop = nullptr);
 
 		Bus& operator=(const Bus& bus) = default;
 
@@ -29,7 +29,8 @@ namespace domain
 		int unique_stops = 0;
 		int route_actual_length = 0;
 		double route_geographic_length = 0.0;
-		StopPointer last_stop_name;
+		bool roundtrip;
+		StopPointer last_stop;
 	};
 
 	struct Stop 

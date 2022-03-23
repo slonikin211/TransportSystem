@@ -140,12 +140,14 @@ namespace json_reader
 		const auto [geographic, actual] = rh_.ComputeRouteLengths(route);
 		if (last_stop.get() == rh_.FindStop(route.front()).get()) 
         {
-			Bus bus(std::move(std::string(bus_req.at("name"s).AsString())), rh_.StopsToStopPointer(std::move(route)), unique_stops_num, actual, geographic);
+			Bus bus(std::move(std::string(bus_req.at("name"s).AsString())), rh_.StopsToStopPointer(std::move(route)), 
+				unique_stops_num, actual, geographic, bus_req.at("is_roundtrip"s).AsBool());
 			rh_.AddBus(std::move(bus));
 		}
 		else 
         {
-			Bus bus(std::move(std::string(bus_req.at("name"s).AsString())), rh_.StopsToStopPointer(std::move(route)), unique_stops_num, actual, geographic, last_stop);
+			Bus bus(std::move(std::string(bus_req.at("name"s).AsString())), rh_.StopsToStopPointer(std::move(route)),
+				unique_stops_num, actual, geographic, bus_req.at("is_roundtrip"s).AsBool(), last_stop);
 			rh_.AddBus(std::move(bus));
 		}
 	}

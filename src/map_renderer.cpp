@@ -130,9 +130,9 @@ namespace renderer {
 			doc.Add(std::move(text_substrate));
 			doc.Add(std::move(text));
 
-			if (bus.last_stop_name != nullptr && bus.last_stop_name.get() != bus.route.front().get()) 
+			if (bus.last_stop != nullptr && bus.last_stop.get() != bus.route.front().get()) 
             {
-				svg::Point p = proj({ bus.last_stop_name.get()->coords.lat, bus.last_stop_name.get()->coords.lng });
+				svg::Point p = proj({ bus.last_stop.get()->coords.lat, bus.last_stop.get()->coords.lng });
 
 				text_substrate_last_stop
 					.SetPosition(p);

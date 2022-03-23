@@ -27,9 +27,7 @@ namespace request_handler
 	public:
 		RequestHandler(transport::TransportCatalogue& db, renderer::MapRenderer& mr);
 
-		void AddBus(const std::string_view raw_query);
 		void AddBus(domain::Bus&& bus);
-		void AddStop(const std::string_view raw_query);
 		void AddStop(domain::Stop&& stop);
 
 		void SetDistanceBetweenStops(const std::string_view raw_query);

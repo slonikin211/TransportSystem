@@ -10,37 +10,9 @@ namespace request_handler {
 
 	RequestHandler::RequestHandler(transport::TransportCatalogue& db, renderer::MapRenderer& mr) : db_(db), mr_(mr), sz_(db, mr) {}
 
-	void RequestHandler::AddBus(const std::string_view raw_query) 
-    {
-		auto [words, separator] = SplitIntoWordsBySeparator(raw_query);
-		auto [route, unique_stops] = WordsToRoute(words, separator);
-		const auto [geographic, actual] = ComputeRouteLengths(route);
-		Bus new_bus(
-			std::move(words[0u]),
-			std::move(StopsToStopPointer(std::move(route))),
-			unique_stops,
-			actual,
-			geographic
-		);
-
-		db_.AddBus(std::move(new_bus));
-	}
-
 	void RequestHandler::AddBus(Bus&& bus) 
     {
 		db_.AddBus(std::move(bus));
-	}
-
-	void RequestHandler::AddStop(const std::string_view raw_query) 
-    {
-		auto [words, _] = SplitIntoWordsBySeparator(raw_query);
-		Stop new_stop(
-			std::move(words[0u]),
-			std::stod(words[1u]),
-			std::stod(words[2u])
-		);
-
-		db_.AddStop(std::move(new_stop));
 	}
 
 	void RequestHandler::AddStop(Stop&& stop) 
